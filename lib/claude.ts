@@ -45,15 +45,31 @@ export async function* checkWithClaude(
   })
 
   let fullResponse = ""
+  let flushed = 0
 
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      const chunk = event.delta.text
-      fullResponse += chunk
+      fullResponse += event.delta.text
 
-      if (!fullResponse.includes("---LANGUAGE:") && !fullResponse.includes("---ERRORS_JSON---")) {
-        yield { type: "text", content: chunk }
+      const delimIdx = fullResponse.indexOf("---LANGUAGE:")
+      if (delimIdx !== -1) {
+        const safe = fullResponse.substring(flushed, delimIdx)
+        if (safe) yield { type: "text", content: safe }
+        flushed = fullResponse.length
+        continue
       }
+
+      if (fullResponse.includes("---ERRORS_JSON---")) {
+        flushed = fullResponse.length
+        continue
+      }
+
+      // Hold back trailing content that could be start of a delimiter
+      const lastDash = fullResponse.lastIndexOf("\n---")
+      const safeEnd = lastDash >= flushed ? lastDash : fullResponse.length
+      const safe = fullResponse.substring(flushed, safeEnd)
+      if (safe) yield { type: "text", content: safe }
+      flushed = safeEnd
     }
   }
 
