@@ -75,7 +75,11 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          const ltResult = await ltPromise
+          // Give LanguageTool 1s after Claude finishes — if not done, skip it
+          const ltResult = await Promise.race([
+            ltPromise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+          ])
           let mergedErrors: CheckError[]
 
           if (ltResult) {
