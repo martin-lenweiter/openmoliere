@@ -15,9 +15,14 @@ function overlaps(a: { offset: number; length: number }, b: { offset: number; le
   )
 }
 
+function textsMatch(a: string, b: string): boolean {
+  return a.toLowerCase().trim() === b.toLowerCase().trim()
+}
+
 export function mergeErrors(
   claudeErrors: ParsedClaudeError[],
-  ltErrors: CheckError[]
+  ltErrors: CheckError[],
+  correctedText?: string
 ): CheckError[] {
   const matched = new Set<number>()
   const result: CheckError[] = []
@@ -27,7 +32,7 @@ export function mergeErrors(
 
     for (let i = 0; i < ltErrors.length; i++) {
       if (matched.has(i)) continue
-      if (overlaps(ce.position, ltErrors[i].position)) {
+      if (overlaps(ce.position, ltErrors[i].position) || textsMatch(ce.original, ltErrors[i].original)) {
         confidence = "high"
         matched.add(i)
         break
@@ -46,7 +51,11 @@ export function mergeErrors(
 
   for (let i = 0; i < ltErrors.length; i++) {
     if (matched.has(i)) continue
-    result.push({ ...ltErrors[i], confidence: "uncertain" })
+    const lt = ltErrors[i]
+    if (correctedText && correctedText.includes(lt.original)) {
+      continue
+    }
+    result.push({ ...lt, confidence: "uncertain" })
   }
 
   result.sort((a, b) => a.position.offset - b.position.offset)

@@ -51,7 +51,7 @@ export async function* checkWithClaude(
       const chunk = event.delta.text
       fullResponse += chunk
 
-      if (!fullResponse.includes("---ERRORS_JSON---")) {
+      if (!fullResponse.includes("---LANGUAGE:") && !fullResponse.includes("---ERRORS_JSON---")) {
         yield { type: "text", content: chunk }
       }
     }

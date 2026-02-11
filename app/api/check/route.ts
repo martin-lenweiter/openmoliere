@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
           const claudeGen = checkWithClaude(text, language)
 
           let claudeErrors: ParsedClaudeError[] = []
+          let claudeCorrectedText = ""
           let detectedLanguage = language ?? "en-US"
 
           for await (const event of claudeGen) {
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
               send({ type: "text", content: event.content })
             } else if (event.type === "done") {
               claudeErrors = event.errors
+              claudeCorrectedText = event.fullText
               detectedLanguage = event.detectedLanguage
             }
           }
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
           let mergedErrors: CheckError[]
 
           if (ltResult) {
-            mergedErrors = mergeErrors(claudeErrors, ltResult.errors)
+            mergedErrors = mergeErrors(claudeErrors, ltResult.errors, claudeCorrectedText)
             if (!language) {
               detectedLanguage = detectedLanguage || ltResult.detectedLanguage
             }
