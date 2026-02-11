@@ -24,6 +24,26 @@ const LANGUAGES = [
   { value: "ru-RU", label: "Russian" },
 ]
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  "en": "English", "en-US": "English (US)", "en-GB": "English (UK)",
+  "de": "German", "de-DE": "German", "de-AT": "German (AT)", "de-CH": "German (CH)",
+  "fr": "French", "fr-FR": "French",
+  "es": "Spanish", "es-ES": "Spanish",
+  "pt": "Portuguese", "pt-BR": "Portuguese (BR)", "pt-PT": "Portuguese (PT)",
+  "it": "Italian", "it-IT": "Italian",
+  "nl": "Dutch", "nl-NL": "Dutch",
+  "pl": "Polish", "pl-PL": "Polish",
+  "ru": "Russian", "ru-RU": "Russian",
+  "ja": "Japanese", "zh": "Chinese", "ko": "Korean",
+  "sv": "Swedish", "da": "Danish", "no": "Norwegian", "fi": "Finnish",
+  "uk": "Ukrainian", "cs": "Czech", "ro": "Romanian", "el": "Greek",
+  "tr": "Turkish", "ar": "Arabic", "hi": "Hindi",
+}
+
+function getLanguageName(code: string): string {
+  return LANGUAGE_NAMES[code] ?? LANGUAGE_NAMES[code.split("-")[0]] ?? code
+}
+
 export function Checker() {
   const [text, setText] = useState("")
   const [language, setLanguage] = useState("")
@@ -183,7 +203,7 @@ export function Checker() {
                 Corrected Text
                 {detectedLanguage && (
                   <span className="ml-2 font-normal text-muted-foreground">
-                    ({detectedLanguage})
+                    ({getLanguageName(detectedLanguage)})
                   </span>
                 )}
               </h2>
