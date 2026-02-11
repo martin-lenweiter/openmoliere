@@ -6,18 +6,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { ErrorCard } from "@/components/error-card"
 import { Check, Copy, Loader2 } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 import type { CheckError, Stats, StreamEvent } from "@/lib/types"
 
 type AppState = "empty" | "ready" | "checking" | "results" | "error"
 
 const LANGUAGES = [
-  { value: "", label: "Auto-detect" },
-  { value: "nl", label: "Dutch" },
-  { value: "en-US", label: "English (US)" },
-  { value: "en-GB", label: "English (UK)" },
-  { value: "fr", label: "French" },
-  { value: "de-DE", label: "German" },
-  { value: "es", label: "Spanish" },
+  { value: "", label: "Auto-detect", translationKey: "autoDetect" as const },
+  { value: "nl", label: "Dutch", translationKey: null },
+  { value: "en-US", label: "English (US)", translationKey: null },
+  { value: "en-GB", label: "English (UK)", translationKey: null },
+  { value: "fr", label: "French", translationKey: null },
+  { value: "de-DE", label: "German", translationKey: null },
+  { value: "es", label: "Spanish", translationKey: null },
 ]
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -33,6 +34,7 @@ function getLanguageName(code: string): string {
 }
 
 export function Checker() {
+  const { t } = useI18n()
   const [text, setText] = useState("")
   const [language, setLanguage] = useState("")
   const [state, setState] = useState<AppState>("empty")
@@ -137,7 +139,7 @@ export function Checker() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Textarea
-          placeholder="Paste your text here to check for spelling, grammar, and style errors..."
+          placeholder={t.placeholder}
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
           rows={8}
@@ -152,7 +154,7 @@ export function Checker() {
             >
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>
-                  {l.label}
+                  {l.translationKey ? t[l.translationKey] : l.label}
                 </option>
               ))}
             </select>
@@ -167,10 +169,10 @@ export function Checker() {
             {state === "checking" ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Checking...
+                {t.checking}
               </>
             ) : (
-              "Check"
+              t.check
             )}
           </Button>
         </div>
@@ -189,7 +191,7 @@ export function Checker() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium">
-                Corrected Text
+                {t.correctedText}
                 {detectedLanguage && (
                   <span className="ml-2 font-normal text-muted-foreground">
                     ({getLanguageName(detectedLanguage)})
@@ -200,12 +202,12 @@ export function Checker() {
                 {copied ? (
                   <>
                     <Check className="h-3.5 w-3.5" />
-                    Copied
+                    {t.copied}
                   </>
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5" />
-                    Copy
+                    {t.copy}
                   </>
                 )}
               </Button>
@@ -220,7 +222,7 @@ export function Checker() {
           {state === "checking" && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Analyzing errors...
+              {t.analyzingErrors}
             </div>
           )}
 
@@ -228,17 +230,17 @@ export function Checker() {
             <div className="flex flex-col gap-2">
               {errors.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No issues found. Your text looks great.
+                  {t.noIssues}
                 </p>
               ) : (
                 <>
                   <h2 className="text-sm font-medium">
-                    Changes
+                    {t.changes}
                     <span className="ml-2 font-normal text-muted-foreground">
                       {[
-                        stats.spelling && `${stats.spelling} spelling`,
-                        stats.grammar && `${stats.grammar} grammar`,
-                        stats.style && `${stats.style} style`,
+                        stats.spelling && `${stats.spelling} ${t.spelling}`,
+                        stats.grammar && `${stats.grammar} ${t.grammar}`,
+                        stats.style && `${stats.style} ${t.style}`,
                       ]
                         .filter(Boolean)
                         .join(", ")}
