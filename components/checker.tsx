@@ -131,7 +131,7 @@ export function Checker() {
           placeholder="Paste your text here to check for spelling, grammar, and style errors..."
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
-          rows={20}
+          rows={12}
           className="resize-y text-base leading-relaxed"
         />
         <div className="flex items-center justify-between gap-3">
