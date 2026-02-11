@@ -45,6 +45,7 @@ export async function checkWithLanguageTool(
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
+    signal: AbortSignal.timeout(5000),
   })
 
   if (!response.ok) {
