@@ -1,3 +1,6 @@
+export const runtime = "nodejs"
+export const maxDuration = 30
+
 import { NextRequest } from "next/server"
 import { z } from "zod/v4"
 import { checkWithClaude, type ParsedClaudeError } from "@/lib/claude"
