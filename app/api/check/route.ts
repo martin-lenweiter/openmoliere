@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
           }
 
           const stats = computeStats(mergedErrors)
-          send({ type: "result", errors: mergedErrors, language: detectedLanguage, stats })
+          send({ type: "result", errors: mergedErrors, language: detectedLanguage, stats, correctedText: claudeCorrectedText })
         } catch (err) {
           const message = err instanceof Error ? err.message : "An unexpected error occurred"
           send({ type: "error", message })

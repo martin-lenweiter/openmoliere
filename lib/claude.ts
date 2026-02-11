@@ -46,30 +46,34 @@ export async function* checkWithClaude(
 
   let fullResponse = ""
   let flushed = 0
+  let hitDelimiter = false
 
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       fullResponse += event.delta.text
+      if (hitDelimiter) continue
 
-      const delimIdx = fullResponse.indexOf("---LANGUAGE:")
-      if (delimIdx !== -1) {
-        const safe = fullResponse.substring(flushed, delimIdx)
-        if (safe) yield { type: "text", content: safe }
+      // Once we see a full delimiter, flush remaining safe text and stop streaming
+      const langIdx = fullResponse.indexOf("---LANGUAGE:")
+      const errIdx = fullResponse.indexOf("---ERRORS_JSON---")
+      if (langIdx !== -1 || errIdx !== -1) {
+        const delimIdx = langIdx !== -1
+          ? (errIdx !== -1 ? Math.min(langIdx, errIdx) : langIdx)
+          : errIdx
+        if (delimIdx > flushed) {
+          yield { type: "text", content: fullResponse.substring(flushed, delimIdx).trimEnd() }
+        }
         flushed = fullResponse.length
+        hitDelimiter = true
         continue
       }
 
-      if (fullResponse.includes("---ERRORS_JSON---")) {
-        flushed = fullResponse.length
-        continue
+      // Hold back last 20 chars to catch partial delimiters
+      const safeEnd = Math.max(flushed, fullResponse.length - 20)
+      if (safeEnd > flushed) {
+        yield { type: "text", content: fullResponse.substring(flushed, safeEnd) }
+        flushed = safeEnd
       }
-
-      // Hold back trailing content that could be start of a delimiter
-      const lastDash = fullResponse.lastIndexOf("\n---")
-      const safeEnd = lastDash >= flushed ? lastDash : fullResponse.length
-      const safe = fullResponse.substring(flushed, safeEnd)
-      if (safe) yield { type: "text", content: safe }
-      flushed = safeEnd
     }
   }
 
@@ -85,7 +89,7 @@ export interface ParsedClaudeError {
   position: { offset: number; length: number }
 }
 
-function parseClaudeResponse(response: string): {
+export function parseClaudeResponse(response: string): {
   correctedText: string
   errors: ParsedClaudeError[]
   language: string
@@ -94,7 +98,7 @@ function parseClaudeResponse(response: string): {
   let correctedText = response
   let errors: ParsedClaudeError[] = []
 
-  const langMatch = response.match(/---LANGUAGE:\s*([a-zA-Z-]+)\s*---/)
+  const langMatch = response.match(/---LANGUAGE:\s*([a-zA-Z]+(?:-[a-zA-Z]+)?)\s*---/)
   if (langMatch) {
     language = langMatch[1]
   }
@@ -102,7 +106,7 @@ function parseClaudeResponse(response: string): {
   const delimiterIndex = response.indexOf("---ERRORS_JSON---")
   if (delimiterIndex !== -1) {
     let textPart = response.substring(0, delimiterIndex)
-    const langLineMatch = textPart.match(/\n?---LANGUAGE:\s*[a-zA-Z-]+\s*---\s*$/)
+    const langLineMatch = textPart.match(/\n?---LANGUAGE:\s*[a-zA-Z]+(?:-[a-zA-Z]+)?\s*---\s*$/)
     if (langLineMatch) {
       textPart = textPart.substring(0, textPart.length - langLineMatch[0].length)
     }

@@ -24,5 +24,5 @@ export interface Stats {
 
 export type StreamEvent =
   | { type: "text"; content: string }
-  | { type: "result"; errors: CheckError[]; language: string; stats: Stats }
+  | { type: "result"; errors: CheckError[]; language: string; stats: Stats; correctedText: string }
   | { type: "error"; message: string }

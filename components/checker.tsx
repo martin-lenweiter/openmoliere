@@ -12,32 +12,20 @@ type AppState = "empty" | "ready" | "checking" | "results" | "error"
 
 const LANGUAGES = [
   { value: "", label: "Auto-detect" },
+  { value: "nl", label: "Dutch" },
   { value: "en-US", label: "English (US)" },
   { value: "en-GB", label: "English (UK)" },
-  { value: "de-DE", label: "German" },
   { value: "fr", label: "French" },
+  { value: "de-DE", label: "German" },
   { value: "es", label: "Spanish" },
-  { value: "pt-BR", label: "Portuguese (BR)" },
-  { value: "it", label: "Italian" },
-  { value: "nl", label: "Dutch" },
-  { value: "pl-PL", label: "Polish" },
-  { value: "ru-RU", label: "Russian" },
 ]
 
 const LANGUAGE_NAMES: Record<string, string> = {
-  "en": "English", "en-US": "English (US)", "en-GB": "English (UK)",
-  "de": "German", "de-DE": "German", "de-AT": "German (AT)", "de-CH": "German (CH)",
-  "fr": "French", "fr-FR": "French",
-  "es": "Spanish", "es-ES": "Spanish",
-  "pt": "Portuguese", "pt-BR": "Portuguese (BR)", "pt-PT": "Portuguese (PT)",
-  "it": "Italian", "it-IT": "Italian",
   "nl": "Dutch", "nl-NL": "Dutch",
-  "pl": "Polish", "pl-PL": "Polish",
-  "ru": "Russian", "ru-RU": "Russian",
-  "ja": "Japanese", "zh": "Chinese", "ko": "Korean",
-  "sv": "Swedish", "da": "Danish", "no": "Norwegian", "fi": "Finnish",
-  "uk": "Ukrainian", "cs": "Czech", "ro": "Romanian", "el": "Greek",
-  "tr": "Turkish", "ar": "Arabic", "hi": "Hindi",
+  "en": "English", "en-US": "English (US)", "en-GB": "English (UK)",
+  "fr": "French", "fr-FR": "French",
+  "de": "German", "de-DE": "German", "de-AT": "German (AT)", "de-CH": "German (CH)",
+  "es": "Spanish", "es-ES": "Spanish",
 }
 
 function getLanguageName(code: string): string {
@@ -106,6 +94,7 @@ export function Checker() {
             if (event.type === "text") {
               setCorrectedText((prev) => prev + event.content)
             } else if (event.type === "result") {
+              setCorrectedText(event.correctedText)
               setErrors(event.errors)
               setStats(event.stats)
               setDetectedLanguage(event.language)

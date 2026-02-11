@@ -7,7 +7,7 @@ export default function Home() {
         <div className="mb-8 flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">OpenMoliere</h1>
           <p className="text-sm text-muted-foreground">
-            Dual-engine spelling, grammar, and style checker
+            AI-powered and rule-based spelling, grammar, and style checker
           </p>
         </div>
         <Checker />

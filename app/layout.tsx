@@ -9,7 +9,7 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: "OpenMoliere",
-  description: "Dual-engine spelling, grammar, and style checker",
+  description: "AI-powered and rule-based spelling, grammar, and style checker",
 }
 
 export default function RootLayout({
