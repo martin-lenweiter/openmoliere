@@ -154,7 +154,6 @@ export function Checker() {
           <Button
             onClick={handleCheck}
             disabled={state === "empty" || state === "checking" || isOverLimit}
-            className="cursor-pointer"
           >
             {state === "checking" ? (
               <>
