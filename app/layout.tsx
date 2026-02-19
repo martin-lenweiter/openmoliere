@@ -8,7 +8,7 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
-  title: "OpenMoliere",
+  title: "OpenMolière",
   description: "AI-powered and rule-based spelling, grammar, and style checker",
 }
 
