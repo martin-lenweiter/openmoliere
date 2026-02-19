@@ -213,22 +213,30 @@ export function PromptEngineer() {
         </Card>
       )}
 
-      {(isLoading || state === "results") && (streamedText || thinkingText) && (
+      {(isLoading || (state === "results" && (streamedText || thinkingText))) && (
         <div className="flex flex-col gap-4">
-          {thinkingText && (
+          {(isLoading || thinkingText) && (
             <Collapsible open={thinkingExpanded} onOpenChange={setThinkingExpanded}>
               <CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                Analysis
-                {isLoading && thinkingExpanded && (
-                  <span className="ml-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {state === "refining" ? "Regenerating prompt..." : "Analyzing prompt..."}
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                    Analysis
+                  </>
                 )}
               </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="mt-2 max-h-64 overflow-y-auto rounded-md border p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                  {thinkingText}
-                </div>
-              </CollapsibleContent>
+              {thinkingText && (
+                <CollapsibleContent>
+                  <div className="mt-2 max-h-64 overflow-y-auto rounded-md border p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {thinkingText}
+                  </div>
+                </CollapsibleContent>
+              )}
             </Collapsible>
           )}
 
@@ -290,13 +298,6 @@ export function PromptEngineer() {
             </Collapsible>
           )}
           </>
-          )}
-
-          {isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {state === "refining" ? "Regenerating prompt..." : "Analyzing prompt..."}
-            </div>
           )}
 
           {state === "results" && (
