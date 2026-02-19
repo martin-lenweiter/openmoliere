@@ -21,13 +21,14 @@ const USE_CASES: { value: PromptUseCase; label: string; description: string }[] 
 ]
 
 function splitPromptAndChangelog(text: string): { prompt: string; changelog: string | null } {
-  const match = text.match(/\n---\n\n## What I changed\b/)
+  const match = text.match(/\n+-{3,}\n+## What I changed\b/)
   if (!match || match.index === undefined) {
     return { prompt: text, changelog: null }
   }
+  const changelogStart = text.indexOf("## What I changed", match.index)
   return {
     prompt: text.substring(0, match.index).trimEnd(),
-    changelog: text.substring(match.index + "\n---\n".length).trimEnd(),
+    changelog: text.substring(changelogStart).trimEnd(),
   }
 }
 
