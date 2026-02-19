@@ -16,7 +16,7 @@ type AppState = "empty" | "ready" | "analyzing" | "results" | "refining" | "erro
 
 const USE_CASES: { value: PromptUseCase; label: string; description: string }[] = [
   { value: "task-prompt", label: "Task Prompt", description: "One-shot instruction for a specific task" },
-  { value: "agent-instructions", label: "Agent Instructions", description: "Rules for an autonomous AI agent" },
+  { value: "agent-instructions", label: "Agent Instructions", description: "Instructions for an autonomous AI agent (e.g. CLAUDE.md, task briefs)" },
   { value: "system-prompt", label: "System Prompt", description: "Persistent behavior across a conversation" },
 ]
 
