@@ -141,6 +141,12 @@ export function Checker() {
           placeholder="Paste your text here to check for spelling, grammar, and style errors..."
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && e.metaKey && text.trim() && state !== "checking" && !isOverLimit) {
+              e.preventDefault()
+              handleCheck()
+            }
+          }}
           rows={8}
           className="resize-y text-base leading-relaxed"
         />
