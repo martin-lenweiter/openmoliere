@@ -218,7 +218,7 @@ export function PromptEngineer() {
           {(isLoading || thinkingText) && (
             <Collapsible open={thinkingExpanded} onOpenChange={setThinkingExpanded}>
               <CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {isLoading ? (
+                {isLoading && !thinkingExpanded ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     {state === "refining" ? "Regenerating prompt..." : "Analyzing prompt..."}
@@ -226,7 +226,7 @@ export function PromptEngineer() {
                 ) : (
                   <>
                     <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                    Analysis
+                    {isLoading ? (state === "refining" ? "Regenerating prompt..." : "Analyzing prompt...") : "Analysis"}
                   </>
                 )}
               </CollapsibleTrigger>
