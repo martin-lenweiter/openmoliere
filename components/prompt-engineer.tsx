@@ -42,6 +42,7 @@ export function PromptEngineer() {
   const [conversation, setConversation] = useState<ConversationEntry[]>([])
   const [round, setRound] = useState(1)
   const [errorMessage, setErrorMessage] = useState("")
+  const [feedback, setFeedback] = useState("")
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const { copied, copy } = useCopyToClipboard()
@@ -55,6 +56,7 @@ export function PromptEngineer() {
     setStreamedText("")
     setQuestions([])
     setAnswers({})
+    setFeedback("")
     setErrorMessage("")
 
     const promptToSend = promptOverride ?? prompt
@@ -115,6 +117,10 @@ export function PromptEngineer() {
       }))
       .filter((e) => e.answer !== "")
 
+    if (feedback.trim()) {
+      newEntries.push({ question: "Additional feedback from user", answer: feedback.trim() })
+    }
+
     const nextConv = [...conversation, ...newEntries]
     setConversation(nextConv)
     setRound((r) => r + 1)
@@ -123,7 +129,7 @@ export function PromptEngineer() {
     setEditedPrompt(null)
     setIsEditing(false)
     callApi(nextConv, displayedPrompt)
-  }, [questions, answers, conversation, callApi, displayedPrompt])
+  }, [questions, answers, feedback, conversation, callApi, displayedPrompt])
 
   const handlePromptChange = (value: string) => {
     setPrompt(value)
@@ -262,7 +268,9 @@ export function PromptEngineer() {
             <QuestionsPanel
               questions={questions}
               answers={answers}
+              feedback={feedback}
               onAnswer={handleAnswer}
+              onFeedbackChange={setFeedback}
               onRegenerate={handleRegenerate}
               round={round}
               isRefining={false}

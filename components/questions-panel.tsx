@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
 import type { ClarifyingQuestion } from "@/lib/prompt-engineer-types"
 
 interface QuestionsPanelProps {
   questions: ClarifyingQuestion[]
   answers: Record<number, string>
+  feedback: string
   onAnswer: (index: number, value: string) => void
+  onFeedbackChange: (value: string) => void
   onRegenerate: () => void
   round: number
   isRefining: boolean
@@ -19,7 +22,9 @@ interface QuestionsPanelProps {
 export function QuestionsPanel({
   questions,
   answers,
+  feedback,
   onAnswer,
+  onFeedbackChange,
   onRegenerate,
   round,
   isRefining,
@@ -36,7 +41,7 @@ export function QuestionsPanel({
 
   if (questions.length === 0) return null
 
-  const hasAnswer = Object.values(answers).some((v) => v.trim() !== "")
+  const hasAnswer = Object.values(answers).some((v) => v.trim() !== "") || feedback.trim() !== ""
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,6 +98,22 @@ export function QuestionsPanel({
             )}
           </div>
         ))}
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label className="text-sm">Additional feedback</Label>
+        <Textarea
+          placeholder="Anything else you'd like to change about the prompt..."
+          value={feedback}
+          onChange={(e) => onFeedbackChange(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault()
+              onRegenerate()
+            }
+          }}
+          rows={2}
+          className="resize-y text-sm"
+        />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
