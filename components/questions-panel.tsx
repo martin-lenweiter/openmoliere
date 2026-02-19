@@ -40,7 +40,7 @@ export function QuestionsPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-sm font-medium">Clarifying Questions</h3>
+      <h3 className="text-base font-medium">Clarifying Questions</h3>
       <div className="flex flex-col gap-4">
         {questions.map((q, i) => (
           <div key={i} className="flex flex-col gap-2">

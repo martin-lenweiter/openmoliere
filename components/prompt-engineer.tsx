@@ -189,7 +189,7 @@ export function PromptEngineer() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium">Improved Prompt</h2>
+              <h2 className="text-base font-medium">Improved Prompt</h2>
               <Button variant="ghost" size="sm" onClick={() => copy(displayedPrompt)}>
                 {copied ? (
                   <>
@@ -210,7 +210,7 @@ export function PromptEngineer() {
                   <Textarea
                     value={displayedPrompt}
                     onChange={(e) => setEditedPrompt(e.target.value)}
-                    className="min-h-[200px] resize-y border-none bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+                    className="min-h-[120px] resize-y border-none bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                     rows={displayedPrompt.split("\n").length + 1}
                   />
                 ) : (
@@ -221,10 +221,11 @@ export function PromptEngineer() {
           </div>
 
           {changelog && (
-            <div className="mt-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-base font-medium">What I changed</h2>
               <Card>
-                <CardContent className="prose prose-sm max-w-none pt-4 dark:prose-invert">
-                  <ReactMarkdown>{changelog}</ReactMarkdown>
+                <CardContent className="prose prose-sm max-w-none pt-4 dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0">
+                  <ReactMarkdown>{changelog.replace(/^## What I changed\n*/, "")}</ReactMarkdown>
                 </CardContent>
               </Card>
             </div>

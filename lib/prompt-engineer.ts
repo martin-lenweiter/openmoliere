@@ -36,6 +36,7 @@ ${USE_CASE_SECTIONS[useCase]}
 - If the prompt is vague or missing critical information, generate up to 3 clarifying questions. If clear enough, skip questions entirely.
 - Always produce a usable improved prompt each round. Handle missing information with explicit assumptions noted in the changelog.
 - Do NOT add generic boilerplate. Every addition must serve a specific purpose for this prompt.
+- Do NOT add persona/role prompting (e.g. "You are an expert X") unless the use case is a system prompt. Research shows personas do not improve accuracy for task prompts or agent instructions.
 
 ## Output format
 
