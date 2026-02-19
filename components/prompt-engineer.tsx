@@ -218,7 +218,9 @@ export function PromptEngineer() {
                     rows={displayedPrompt.split("\n").length + 1}
                   />
                 ) : (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{improvedPrompt}</p>
+                  <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert">
+                    <ReactMarkdown>{improvedPrompt}</ReactMarkdown>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -228,8 +230,8 @@ export function PromptEngineer() {
             <div className="flex flex-col gap-2">
               <h2 className="text-base font-medium">What I changed</h2>
               <Card>
-                <CardContent className="prose prose-sm max-w-none pt-4 dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0">
-                  <ReactMarkdown>{changelog.replace(/^## What I changed\n*/, "")}</ReactMarkdown>
+                <CardContent className="prose prose-sm max-w-none pt-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
+                  <ReactMarkdown>{changelog.replace(/^#{1,3}\s*What I changed\s*\n*/, "").trimStart()}</ReactMarkdown>
                 </CardContent>
               </Card>
             </div>
