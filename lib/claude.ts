@@ -1,6 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk"
-
-const client = new Anthropic()
+import { client } from "@/lib/anthropic"
 
 const SYSTEM_PROMPT = `You are a meticulous proofreader and copy editor. Your job is to fix spelling, grammar, and style errors in the provided text.
 

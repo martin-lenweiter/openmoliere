@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { ErrorCard } from "@/components/error-card"
 import { Check, Copy, Loader2 } from "lucide-react"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
+import { readSSEStream } from "@/lib/sse"
 import type { CheckError, Stats, StreamEvent } from "@/lib/types"
 
 type AppState = "empty" | "ready" | "checking" | "results" | "error"
@@ -41,7 +43,7 @@ export function Checker() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [detectedLanguage, setDetectedLanguage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopyToClipboard()
   const abortRef = useRef<AbortController | null>(null)
 
   const handleCheck = useCallback(async () => {
@@ -70,42 +72,17 @@ export function Checker() {
         throw new Error(data?.error ?? `Request failed (${res.status})`)
       }
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error("No response body")
-
-      const decoder = new TextDecoder()
-      let buffer = ""
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split("\n\n")
-        buffer = lines.pop() ?? ""
-
-        for (const line of lines) {
-          const data = line.replace(/^data: /, "").trim()
-          if (!data) continue
-
-          try {
-            const event: StreamEvent = JSON.parse(data)
-
-            if (event.type === "text") {
-              setCorrectedText((prev) => prev + event.content)
-            } else if (event.type === "result") {
-              setCorrectedText(event.correctedText)
-              setErrors(event.errors)
-              setStats(event.stats)
-              setDetectedLanguage(event.language)
-              setState("results")
-            } else if (event.type === "error") {
-              throw new Error(event.message)
-            }
-          } catch (e) {
-            if (e instanceof SyntaxError) continue
-            throw e
-          }
+      for await (const event of readSSEStream<StreamEvent>(res)) {
+        if (event.type === "text") {
+          setCorrectedText((prev) => prev + event.content)
+        } else if (event.type === "result") {
+          setCorrectedText(event.correctedText)
+          setErrors(event.errors)
+          setStats(event.stats)
+          setDetectedLanguage(event.language)
+          setState("results")
+        } else if (event.type === "error") {
+          throw new Error(event.message)
         }
       }
 
@@ -118,10 +95,8 @@ export function Checker() {
   }, [text, language])
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(correctedText)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [correctedText])
+    await copy(correctedText)
+  }, [correctedText, copy])
 
   const handleTextChange = (value: string) => {
     setText(value)

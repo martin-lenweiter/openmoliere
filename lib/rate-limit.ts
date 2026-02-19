@@ -1,4 +1,4 @@
-const LIMIT = 50
+const LIMIT = 100
 const WINDOW_MS = 24 * 60 * 60 * 1000
 
 const store = new Map<string, { count: number; resetAt: number }>()
