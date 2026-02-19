@@ -166,7 +166,7 @@ export function PromptEngineer() {
             <select
               value={useCase}
               onChange={(e) => setUseCase(e.target.value as PromptUseCase)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-[2px]"
+              className={`h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-[2px] ${isLoading ? "pointer-events-none opacity-50" : ""}`}
               disabled={isLoading}
             >
               {USE_CASES.map((uc) => (
