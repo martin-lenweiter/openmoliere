@@ -148,7 +148,7 @@ export function Checker() {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground outline-none focus:border-[2px]"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-[2px]"
             >
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>
