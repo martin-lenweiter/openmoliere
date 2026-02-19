@@ -5,6 +5,7 @@ import { NextRequest } from "next/server"
 import { z } from "zod/v4"
 import { improvePrompt } from "@/lib/prompt-engineer"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { getPostHogClient } from "@/lib/posthog-server"
 import type { PromptEngineerStreamEvent } from "@/lib/prompt-engineer-types"
 
 const conversationEntrySchema = z.object({
@@ -39,6 +40,12 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req)
     const { allowed } = checkRateLimit(ip)
     if (!allowed) {
+      const posthog = getPostHogClient()
+      posthog.capture({
+        distinctId: ip,
+        event: "api_prompt_engineer_rate_limited",
+        properties: { use_case: useCase, prompt_length: prompt.length },
+      })
       return Response.json(
         { error: "You've reached the daily limit. Try again tomorrow." },
         { status: 429 }
@@ -54,6 +61,7 @@ export async function POST(req: NextRequest) {
 
         try {
           const gen = improvePrompt(prompt, useCase, conversation)
+          const round = conversation.length > 0 ? Math.ceil(conversation.length / 2) + 1 : 1
 
           for await (const event of gen) {
             if (event.type === "thinking") {
@@ -62,6 +70,17 @@ export async function POST(req: NextRequest) {
               send({ type: "text", content: event.content })
             } else if (event.type === "done") {
               send({ type: "result", questions: event.questions })
+              const posthog = getPostHogClient()
+              posthog.capture({
+                distinctId: ip,
+                event: "api_prompt_engineer_completed",
+                properties: {
+                  use_case: useCase,
+                  round,
+                  questions_count: event.questions.length,
+                  prompt_length: prompt.length,
+                },
+              })
             }
           }
         } catch (err) {

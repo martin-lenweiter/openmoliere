@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
+import posthog from "posthog-js"
 import ReactMarkdown from "react-markdown"
 import remarkBreaks from "remark-breaks"
 import { Button } from "@/components/ui/button"
@@ -51,6 +52,7 @@ export function PromptEngineer() {
   const [thinkingExpanded, setThinkingExpanded] = useState(false)
   const { copied, copy } = useCopyToClipboard()
   const abortRef = useRef<AbortController | null>(null)
+  const currentRoundRef = useRef(1)
 
   const callApi = useCallback(async (conv: ConversationEntry[], promptOverride?: string) => {
     abortRef.current?.abort()
@@ -80,24 +82,42 @@ export function PromptEngineer() {
         throw new Error(data?.error ?? `Request failed (${res.status})`)
       }
 
+      let resultQuestions: ClarifyingQuestion[] = []
+
       for await (const event of readSSEStream<PromptEngineerStreamEvent>(res)) {
         if (event.type === "thinking") {
           setThinkingText((prev) => prev + event.content)
         } else if (event.type === "text") {
           setStreamedText((prev) => prev + event.content)
         } else if (event.type === "result") {
+          resultQuestions = event.questions
           setQuestions(event.questions)
           setState("results")
+          posthog.capture("prompt_improve_completed", {
+            use_case: useCase,
+            round: currentRoundRef.current,
+            questions_count: event.questions.length,
+            has_questions: event.questions.length > 0,
+            prompt_length: promptToSend.length,
+          })
         } else if (event.type === "error") {
           throw new Error(event.message)
         }
       }
 
       setState((s) => (s !== "results" ? "results" : s))
+      return resultQuestions
     } catch (e) {
       if ((e as Error).name === "AbortError") return
-      setErrorMessage((e as Error).message)
+      const message = (e as Error).message
+      setErrorMessage(message)
       setState("error")
+      posthog.capture("prompt_improve_failed", {
+        error_message: message,
+        use_case: useCase,
+        round: currentRoundRef.current,
+      })
+      posthog.captureException(e)
     }
   }, [prompt, useCase])
 
@@ -105,11 +125,16 @@ export function PromptEngineer() {
     if (!prompt.trim()) return
     setState("analyzing")
     setConversation([])
+    currentRoundRef.current = 1
     setRound(1)
     setEditedPrompt(null)
     setIsEditing(false)
+    posthog.capture("prompt_improve_submitted", {
+      use_case: useCase,
+      prompt_length: prompt.length,
+    })
     callApi([])
-  }, [prompt, callApi])
+  }, [prompt, useCase, callApi])
 
   const charCount = prompt.length
   const isOverLimit = charCount > 20000
@@ -131,14 +156,25 @@ export function PromptEngineer() {
     }
 
     const nextConv = [...conversation, ...newEntries]
+    const nextRound = round + 1
+    currentRoundRef.current = nextRound
     setConversation(nextConv)
-    setRound((r) => r + 1)
+    setRound(nextRound)
     setState("refining")
     setPrompt(displayedPrompt)
     setEditedPrompt(null)
     setIsEditing(false)
+
+    posthog.capture("prompt_regenerated", {
+      use_case: useCase,
+      round: nextRound,
+      questions_answered: newEntries.filter((e) => e.question !== "Additional feedback from user").length,
+      has_feedback: feedback.trim().length > 0,
+      prompt_length: displayedPrompt.length,
+    })
+
     callApi(nextConv, displayedPrompt)
-  }, [questions, answers, feedback, conversation, callApi, displayedPrompt])
+  }, [questions, answers, feedback, conversation, round, useCase, callApi, displayedPrompt])
 
   const handlePromptChange = (value: string) => {
     setPrompt(value)
@@ -150,6 +186,15 @@ export function PromptEngineer() {
   const handleAnswer = (index: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [index]: value }))
   }
+
+  const handleCopy = useCallback(() => {
+    copy(displayedPrompt)
+    posthog.capture("prompt_result_copied", {
+      use_case: useCase,
+      round,
+      prompt_length: displayedPrompt.length,
+    })
+  }, [copy, displayedPrompt, useCase, round])
 
   return (
     <div className="flex flex-col gap-6">
@@ -245,7 +290,7 @@ export function PromptEngineer() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-medium">Improved Prompt</h2>
-              <Button variant="ghost" size="sm" onClick={() => copy(displayedPrompt)}>
+              <Button variant="ghost" size="sm" onClick={handleCopy}>
                 {copied ? (
                   <>
                     <Check className="h-3.5 w-3.5" />

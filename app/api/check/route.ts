@@ -7,6 +7,7 @@ import { checkWithClaude, type ParsedClaudeError } from "@/lib/claude"
 import { checkWithLanguageTool } from "@/lib/languagetool"
 import { mergeErrors } from "@/lib/merge"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { getPostHogClient } from "@/lib/posthog-server"
 import type { CheckError, Stats, StreamEvent } from "@/lib/types"
 
 const requestSchema = z.object({
@@ -44,6 +45,12 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req)
     const { allowed } = checkRateLimit(ip)
     if (!allowed) {
+      const posthog = getPostHogClient()
+      posthog.capture({
+        distinctId: ip,
+        event: "api_check_rate_limited",
+        properties: { language: language ?? "auto", text_length: text.length },
+      })
       return Response.json(
         { error: "You've reached the daily limit. Try again tomorrow." },
         { status: 429 }
@@ -93,6 +100,21 @@ export async function POST(req: NextRequest) {
 
           const stats = computeStats(mergedErrors)
           send({ type: "result", errors: mergedErrors, language: detectedLanguage, stats, correctedText: claudeCorrectedText })
+
+          const posthog = getPostHogClient()
+          posthog.capture({
+            distinctId: ip,
+            event: "api_check_completed",
+            properties: {
+              language: language ?? "auto",
+              detected_language: detectedLanguage,
+              total_errors: stats.totalErrors,
+              spelling_errors: stats.spelling,
+              grammar_errors: stats.grammar,
+              style_errors: stats.style,
+              text_length: text.length,
+            },
+          })
         } catch (err) {
           const message = err instanceof Error ? err.message : "An unexpected error occurred"
           send({ type: "error", message })

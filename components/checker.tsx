@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
+import posthog from "posthog-js"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -59,6 +60,11 @@ export function Checker() {
     setStats(null)
     setErrorMessage("")
 
+    posthog.capture("proofread_check_submitted", {
+      language: language || "auto",
+      text_length: text.length,
+    })
+
     try {
       const res = await fetch("/api/check", {
         method: "POST",
@@ -81,6 +87,16 @@ export function Checker() {
           setStats(event.stats)
           setDetectedLanguage(event.language)
           setState("results")
+          posthog.capture("proofread_check_completed", {
+            language: language || "auto",
+            detected_language: event.language,
+            total_errors: event.stats.totalErrors,
+            spelling_errors: event.stats.spelling,
+            grammar_errors: event.stats.grammar,
+            style_errors: event.stats.style,
+            has_errors: event.stats.totalErrors > 0,
+            text_length: text.length,
+          })
         } else if (event.type === "error") {
           throw new Error(event.message)
         }
@@ -89,13 +105,23 @@ export function Checker() {
       setState((s) => (s === "checking" ? "results" : s))
     } catch (e) {
       if ((e as Error).name === "AbortError") return
-      setErrorMessage((e as Error).message)
+      const message = (e as Error).message
+      setErrorMessage(message)
       setState("error")
+      posthog.capture("proofread_check_failed", {
+        error_message: message,
+        language: language || "auto",
+        text_length: text.length,
+      })
+      posthog.captureException(e)
     }
   }, [text, language])
 
   const handleCopy = useCallback(async () => {
     await copy(correctedText)
+    posthog.capture("proofread_result_copied", {
+      text_length: correctedText.length,
+    })
   }, [correctedText, copy])
 
   const handleTextChange = (value: string) => {
