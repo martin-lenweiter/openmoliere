@@ -13,6 +13,7 @@ export interface ConversationEntry {
 }
 
 export type PromptEngineerStreamEvent =
+  | { type: "thinking"; content: string }
   | { type: "text"; content: string }
   | { type: "result"; questions: ClarifyingQuestion[] }
   | { type: "error"; message: string }

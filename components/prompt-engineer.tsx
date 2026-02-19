@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react"
 import ReactMarkdown from "react-markdown"
+import remarkBreaks from "remark-breaks"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -46,6 +47,8 @@ export function PromptEngineer() {
   const [feedback, setFeedback] = useState("")
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [thinkingText, setThinkingText] = useState("")
+  const [thinkingExpanded, setThinkingExpanded] = useState(false)
   const { copied, copy } = useCopyToClipboard()
   const abortRef = useRef<AbortController | null>(null)
 
@@ -55,6 +58,8 @@ export function PromptEngineer() {
     abortRef.current = controller
 
     setStreamedText("")
+    setThinkingText("")
+    setThinkingExpanded(false)
     setQuestions([])
     setAnswers({})
     setFeedback("")
@@ -75,8 +80,16 @@ export function PromptEngineer() {
         throw new Error(data?.error ?? `Request failed (${res.status})`)
       }
 
+      let receivedText = false
       for await (const event of readSSEStream<PromptEngineerStreamEvent>(res)) {
-        if (event.type === "text") {
+        if (event.type === "thinking") {
+          setThinkingText((prev) => prev + event.content)
+          setThinkingExpanded(true)
+        } else if (event.type === "text") {
+          if (!receivedText) {
+            receivedText = true
+            setThinkingExpanded(false)
+          }
           setStreamedText((prev) => prev + event.content)
         } else if (event.type === "result") {
           setQuestions(event.questions)
@@ -206,8 +219,27 @@ export function PromptEngineer() {
         </Card>
       )}
 
-      {(isLoading || state === "results") && streamedText && (
+      {(isLoading || state === "results") && (streamedText || thinkingText) && (
         <div className="flex flex-col gap-4">
+          {thinkingText && (
+            <Collapsible open={thinkingExpanded} onOpenChange={setThinkingExpanded}>
+              <CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                Analysis
+                {isLoading && thinkingExpanded && (
+                  <span className="ml-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
+                )}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 max-h-64 overflow-y-auto rounded-md border p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                  {thinkingText}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {streamedText && (
+          <>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-medium">Improved Prompt</h2>
@@ -241,7 +273,7 @@ export function PromptEngineer() {
                     className={`prose prose-sm max-w-none text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 ${promptEditable ? "cursor-text" : "cursor-default"}`}
                     onClick={() => promptEditable && setIsEditing(true)}
                   >
-                    <ReactMarkdown>{displayedPrompt}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>{displayedPrompt}</ReactMarkdown>
                   </div>
                 )}
               </CardContent>
@@ -262,6 +294,8 @@ export function PromptEngineer() {
                 </Card>
               </CollapsibleContent>
             </Collapsible>
+          )}
+          </>
           )}
 
           {isLoading && (

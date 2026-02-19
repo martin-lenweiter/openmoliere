@@ -11,9 +11,11 @@ Focus areas: tool usage guidelines, decision-making criteria, error handling, mu
 }
 
 function buildSystemPrompt(useCase: PromptUseCase): string {
-  return `You are an expert prompt engineer. Your job is to take a user's prompt and produce a significantly improved version based on proven prompt engineering principles.
+  return `You are an expert prompt engineer. Your job is to take a user's prompt and produce an improved version based on proven prompt engineering principles.
 
-## Principles to apply
+## Principles to consider
+
+Apply a principle only when it genuinely improves this specific prompt. A simple prompt that needs only task clarity should not get examples, structured delimiters, or constraint lists bolted on. Match improvement intensity to the prompt's actual complexity and gaps.
 
 1. **Clear task definition.** State exactly what you want done. Ambiguity is the #1 cause of bad output.
 2. **Output specification.** Format, length, structure, audience, tone. Tell the model what the result looks like.
@@ -24,19 +26,30 @@ function buildSystemPrompt(useCase: PromptUseCase): string {
 7. **Precise constraints.** Testable constraints like "Respond in under 100 words" — not vague mush like "Be concise but thorough."
 8. **One task per prompt.** If a prompt requires multiple complex things, break it into separate steps.
 
+## Anti-patterns — do NOT do these
+
+- Do NOT inflate scope — don't add handling for edge cases, scenarios, or inputs the user didn't mention
+- Do NOT over-structure — don't add XML delimiters, numbered sections, or markdown headers to a prompt that works fine as plain text
+- Do NOT add examples unless the task genuinely benefits from demonstration (e.g., specific output format that's hard to describe)
+- Do NOT invent constraints the user didn't state or imply
+- Do NOT restructure a prompt that's already well-organized — improve the weak parts, leave the strong parts alone
+- Preserve the author's voice and intent. You're improving, not rewriting.
+- Do NOT add persona/role prompting (e.g. "You are an expert X") unless the use case is a system prompt. Research shows personas do not improve accuracy for task prompts or agent instructions.
+
 ## Use case context
 
 ${USE_CASE_SECTIONS[useCase]}
 
 ## Instructions
 
+Before improving the prompt, think through: What are the biggest gaps or weaknesses in this prompt? Which principles genuinely apply here? What would be the highest-value questions to ask? Use this analysis to guide both your improvements and your questions.
+
 - Analyze the user's prompt against the principles above
-- Produce an improved version that follows these principles
+- Produce an improved version that applies only the relevant principles
 - Generate a markdown changelog section explaining what you changed and why
-- Almost always generate 2-3 clarifying questions. A prompt can nearly always be improved with more context about the user's intent, constraints, or audience. Only skip questions if the prompt is exceptionally detailed and specific.
+- Generate 2-3 clarifying questions that target the largest information gaps in this prompt. Ask about things that would most change the output if answered — core purpose, domain specifics, key constraints, intended audience. Do not ask about surface details (tone, format, style) when the fundamental purpose or context is unclear. Rank questions by information value: the first question should address the single biggest unknown. Only skip questions if the prompt is exceptionally detailed and specific.
 - Always produce a usable improved prompt each round. Handle missing information with explicit assumptions noted in the changelog.
 - Do NOT add generic boilerplate. Every addition must serve a specific purpose for this prompt.
-- Do NOT add persona/role prompting (e.g. "You are an expert X") unless the use case is a system prompt. Research shows personas do not improve accuracy for task prompts or agent instructions.
 
 ## Output format
 
@@ -82,40 +95,48 @@ export async function* improvePrompt(
   useCase: PromptUseCase,
   conversation: ConversationEntry[]
 ): AsyncGenerator<
+  | { type: "thinking"; content: string }
   | { type: "text"; content: string }
-  | { type: "done"; fullText: string; questions: ClarifyingQuestion[] }
+  | { type: "done"; thinking: string; fullText: string; questions: ClarifyingQuestion[] }
 > {
   const stream = client.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 8192,
+    thinking: { type: "enabled", budget_tokens: 4096 },
     system: buildSystemPrompt(useCase),
     messages: buildMessages(prompt, useCase, conversation),
   })
 
+  let thinkingText = ""
   let fullResponse = ""
   let flushed = 0
   let hitDelimiter = false
 
   for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      fullResponse += event.delta.text
-      if (hitDelimiter) continue
+    if (event.type === "content_block_delta") {
+      if (event.delta.type === "thinking_delta") {
+        thinkingText += event.delta.thinking
+        yield { type: "thinking", content: event.delta.thinking }
+      } else if (event.delta.type === "text_delta") {
+        fullResponse += event.delta.text
+        if (hitDelimiter) continue
 
-      const delimIdx = fullResponse.indexOf("---QUESTIONS_JSON---")
-      if (delimIdx !== -1) {
-        if (delimIdx > flushed) {
-          yield { type: "text", content: fullResponse.substring(flushed, delimIdx).trimEnd() }
+        const delimIdx = fullResponse.indexOf("---QUESTIONS_JSON---")
+        if (delimIdx !== -1) {
+          if (delimIdx > flushed) {
+            yield { type: "text", content: fullResponse.substring(flushed, delimIdx).trimEnd() }
+          }
+          flushed = fullResponse.length
+          hitDelimiter = true
+          continue
         }
-        flushed = fullResponse.length
-        hitDelimiter = true
-        continue
-      }
 
-      // Hold back last 25 chars to catch partial delimiter
-      const safeEnd = Math.max(flushed, fullResponse.length - 25)
-      if (safeEnd > flushed) {
-        yield { type: "text", content: fullResponse.substring(flushed, safeEnd) }
-        flushed = safeEnd
+        // Hold back last 25 chars to catch partial delimiter
+        const safeEnd = Math.max(flushed, fullResponse.length - 25)
+        if (safeEnd > flushed) {
+          yield { type: "text", content: fullResponse.substring(flushed, safeEnd) }
+          flushed = safeEnd
+        }
       }
     }
   }
@@ -126,7 +147,7 @@ export async function* improvePrompt(
   }
 
   const { fullText, questions } = parsePromptEngineerResponse(fullResponse)
-  yield { type: "done", fullText, questions }
+  yield { type: "done", thinking: thinkingText, fullText, questions }
 }
 
 export function parsePromptEngineerResponse(response: string): {

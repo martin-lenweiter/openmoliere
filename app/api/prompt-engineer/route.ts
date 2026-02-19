@@ -1,5 +1,5 @@
 export const runtime = "nodejs"
-export const maxDuration = 30
+export const maxDuration = 45
 
 import { NextRequest } from "next/server"
 import { z } from "zod/v4"
@@ -56,7 +56,9 @@ export async function POST(req: NextRequest) {
           const gen = improvePrompt(prompt, useCase, conversation)
 
           for await (const event of gen) {
-            if (event.type === "text") {
+            if (event.type === "thinking") {
+              send({ type: "thinking", content: event.content })
+            } else if (event.type === "text") {
               send({ type: "text", content: event.content })
             } else if (event.type === "done") {
               send({ type: "result", questions: event.questions })
