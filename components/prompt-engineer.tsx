@@ -80,16 +80,10 @@ export function PromptEngineer() {
         throw new Error(data?.error ?? `Request failed (${res.status})`)
       }
 
-      let receivedText = false
       for await (const event of readSSEStream<PromptEngineerStreamEvent>(res)) {
         if (event.type === "thinking") {
           setThinkingText((prev) => prev + event.content)
-          setThinkingExpanded(true)
         } else if (event.type === "text") {
-          if (!receivedText) {
-            receivedText = true
-            setThinkingExpanded(false)
-          }
           setStreamedText((prev) => prev + event.content)
         } else if (event.type === "result") {
           setQuestions(event.questions)
