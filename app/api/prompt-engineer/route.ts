@@ -14,7 +14,7 @@ const conversationEntrySchema = z.object({
 
 const requestSchema = z.object({
   prompt: z.string().min(1, "Prompt is required").max(20000, "Prompt must be under 20,000 characters"),
-  useCase: z.enum(["system-prompt", "task-prompt", "agent-instructions"]),
+  useCase: z.enum(["system-prompt", "chatbot-prompt", "agent-instructions"]),
   conversation: z.array(conversationEntrySchema).max(10).default([]),
 })
 

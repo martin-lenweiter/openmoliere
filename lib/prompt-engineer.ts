@@ -4,8 +4,8 @@ import type { PromptUseCase, ClarifyingQuestion, ConversationEntry } from "@/lib
 const USE_CASE_SECTIONS: Record<PromptUseCase, string> = {
   "system-prompt": `The user is writing a **system prompt** — persistent behavioral instructions for an AI assistant across an entire conversation.
 Focus areas: behavior specification, guardrails, persona definition, output format, tone and style constraints, edge case handling.`,
-  "task-prompt": `The user is writing a **task prompt** — a one-shot instruction for a specific task.
-Focus areas: task clarity, input/output examples, constraints, success criteria, expected format.`,
+  "chatbot-prompt": `The user is writing a **chatbot prompt** — a message or instruction they'll send to a chatbot like ChatGPT or Claude.
+Focus areas: task clarity, relevant context, constraints, expected output format, success criteria.`,
   "agent-instructions": `The user is writing **agent instructions** — instructions for an autonomous AI agent that uses tools and executes multi-step workflows.
 Focus areas: tool usage guidelines, decision-making criteria, error handling, multi-step planning, when to escalate vs. proceed autonomously.`,
 }
@@ -33,7 +33,7 @@ ${USE_CASE_SECTIONS[useCase]}
 - Analyze the user's prompt against the principles above
 - Produce an improved version that follows these principles
 - Generate a markdown changelog section explaining what you changed and why
-- If the prompt is vague or missing critical information, generate up to 3 clarifying questions. If clear enough, skip questions entirely.
+- Almost always generate 2-3 clarifying questions. A prompt can nearly always be improved with more context about the user's intent, constraints, or audience. Only skip questions if the prompt is exceptionally detailed and specific.
 - Always produce a usable improved prompt each round. Handle missing information with explicit assumptions noted in the changelog.
 - Do NOT add generic boilerplate. Every addition must serve a specific purpose for this prompt.
 - Do NOT add persona/role prompting (e.g. "You are an expert X") unless the use case is a system prompt. Research shows personas do not improve accuracy for task prompts or agent instructions.

@@ -50,6 +50,12 @@ export function QuestionsPanel({
                 placeholder={q.placeholder ?? ""}
                 value={answers[i] ?? ""}
                 onChange={(e) => onAnswer(i, e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault()
+                    onRegenerate()
+                  }
+                }}
               />
             )}
             {q.type === "choice" && q.options && (

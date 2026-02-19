@@ -15,7 +15,7 @@ import type { ClarifyingQuestion, ConversationEntry, PromptEngineerStreamEvent, 
 type AppState = "empty" | "ready" | "analyzing" | "results" | "refining" | "error"
 
 const USE_CASES: { value: PromptUseCase; label: string; description: string }[] = [
-  { value: "task-prompt", label: "Task Prompt", description: "One-shot instruction for a specific task" },
+  { value: "chatbot-prompt", label: "Chatbot Prompt", description: "A message or instruction you'd send to a chatbot" },
   { value: "agent-instructions", label: "Agent Instructions", description: "Instructions for an autonomous AI agent (e.g. CLAUDE.md, task briefs)" },
   { value: "system-prompt", label: "System Prompt", description: "Persistent behavior across a conversation" },
 ]
@@ -34,7 +34,7 @@ function splitPromptAndChangelog(text: string): { prompt: string; changelog: str
 
 export function PromptEngineer() {
   const [prompt, setPrompt] = useState("")
-  const [useCase, setUseCase] = useState<PromptUseCase>("task-prompt")
+  const [useCase, setUseCase] = useState<PromptUseCase>("chatbot-prompt")
   const [state, setState] = useState<AppState>("empty")
   const [streamedText, setStreamedText] = useState("")
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([])
@@ -43,6 +43,7 @@ export function PromptEngineer() {
   const [round, setRound] = useState(1)
   const [errorMessage, setErrorMessage] = useState("")
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
   const { copied, copy } = useCopyToClipboard()
   const abortRef = useRef<AbortController | null>(null)
 
@@ -96,6 +97,7 @@ export function PromptEngineer() {
     setConversation([])
     setRound(1)
     setEditedPrompt(null)
+    setIsEditing(false)
     callApi([])
   }, [prompt, callApi])
 
@@ -119,6 +121,7 @@ export function PromptEngineer() {
     setState("refining")
     setPrompt(displayedPrompt)
     setEditedPrompt(null)
+    setIsEditing(false)
     callApi(nextConv, displayedPrompt)
   }, [questions, answers, conversation, callApi, displayedPrompt])
 
@@ -140,6 +143,12 @@ export function PromptEngineer() {
           placeholder="Paste your prompt here to get an improved version..."
           value={prompt}
           onChange={(e) => handlePromptChange(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault()
+              handleImprove()
+            }
+          }}
           rows={8}
           className="resize-y text-base leading-relaxed"
           disabled={isLoading}
@@ -210,16 +219,21 @@ export function PromptEngineer() {
             </div>
             <Card>
               <CardContent className="pt-4">
-                {state === "results" ? (
+                {state === "results" && isEditing ? (
                   <Textarea
                     value={displayedPrompt}
                     onChange={(e) => setEditedPrompt(e.target.value)}
+                    onBlur={() => setIsEditing(false)}
+                    autoFocus
                     className="min-h-[120px] resize-y border-none bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                     rows={displayedPrompt.split("\n").length + 1}
                   />
                 ) : (
-                  <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert">
-                    <ReactMarkdown>{improvedPrompt}</ReactMarkdown>
+                  <div
+                    className="prose prose-sm max-w-none cursor-text text-sm leading-relaxed dark:prose-invert"
+                    onClick={() => state === "results" && setIsEditing(true)}
+                  >
+                    <ReactMarkdown>{displayedPrompt}</ReactMarkdown>
                   </div>
                 )}
               </CardContent>

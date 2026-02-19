@@ -1,4 +1,4 @@
-export type PromptUseCase = "system-prompt" | "task-prompt" | "agent-instructions"
+export type PromptUseCase = "system-prompt" | "chatbot-prompt" | "agent-instructions"
 
 export interface ClarifyingQuestion {
   question: string
