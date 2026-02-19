@@ -8,7 +8,7 @@
 
 **4. Relevant context, nothing more.** Provide what the model needs, prune what it doesn't. Signal-to-noise ratio matters. Dumping an entire document when you need one section degrades performance.
 
-**5. Structured formatting.** Use clear delimiters to separate instructions, context, and examples. XML tags for Claude (fine-tuned for them), Markdown headers for GPT, pick one and be consistent. Research shows up to 40% accuracy variation from formatting alone.
+**5. Structured formatting.** Use clear delimiters to separate instructions, context, and examples.
 
 **6. Affirmative directives.** Say what to do, not what to avoid. "Write in short sentences" beats "Don't write long paragraphs." Negative instructions still activate the associations you're trying to suppress.
 
