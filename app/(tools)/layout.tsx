@@ -16,14 +16,14 @@ export default function ToolsLayout({ children }: { children: React.ReactNode })
       <main className="w-full max-w-3xl">
         <div className="mb-8 flex flex-col gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">OpenMoliere</h1>
-          <nav className="flex gap-4 border-b border-border">
+          <nav className="flex border-b border-border">
             {TABS.map((tab) => {
               const isActive = pathname === tab.href
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`pb-2 text-sm font-medium transition-colors ${
+                  className={`flex-1 pb-2 text-center text-sm font-medium transition-colors ${
                     isActive
                       ? "border-b-2 border-foreground text-foreground"
                       : "text-muted-foreground hover:text-foreground"
