@@ -14,10 +14,10 @@ import type { ClarifyingQuestion, ConversationEntry, PromptEngineerStreamEvent, 
 
 type AppState = "empty" | "ready" | "analyzing" | "results" | "refining" | "error"
 
-const USE_CASES: { value: PromptUseCase; label: string }[] = [
-  { value: "task-prompt", label: "Task Prompt — one-shot instruction for a specific task" },
-  { value: "agent-instructions", label: "Agent Instructions — rules for an autonomous AI agent" },
-  { value: "system-prompt", label: "System Prompt — persistent behavior across a conversation" },
+const USE_CASES: { value: PromptUseCase; label: string; description: string }[] = [
+  { value: "task-prompt", label: "Task Prompt", description: "One-shot instruction for a specific task" },
+  { value: "agent-instructions", label: "Agent Instructions", description: "Rules for an autonomous AI agent" },
+  { value: "system-prompt", label: "System Prompt", description: "Persistent behavior across a conversation" },
 ]
 
 function splitPromptAndChangelog(text: string): { prompt: string; changelog: string | null } {
@@ -143,7 +143,8 @@ export function PromptEngineer() {
           className="resize-y text-base leading-relaxed"
           disabled={isLoading}
         />
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <select
               value={useCase}
@@ -174,6 +175,8 @@ export function PromptEngineer() {
               "Improve"
             )}
           </Button>
+        </div>
+          <p className="text-xs text-muted-foreground">{USE_CASES.find((uc) => uc.value === useCase)?.description}</p>
         </div>
       </div>
 
