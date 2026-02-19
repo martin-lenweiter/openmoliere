@@ -15,7 +15,7 @@ export default function ToolsLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen justify-center bg-background px-4 py-12 sm:py-20">
       <main className="w-full max-w-3xl">
         <div className="mb-8 flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">OpenMoliere</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">OpenMolière</h1>
           <nav className="flex border-b border-border">
             {TABS.map((tab, i) => {
               const isActive = pathname === tab.href
