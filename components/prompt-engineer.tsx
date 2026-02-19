@@ -236,7 +236,7 @@ export function PromptEngineer() {
                   />
                 ) : (
                   <div
-                    className="prose prose-sm max-w-none cursor-text text-sm leading-relaxed dark:prose-invert"
+                    className="prose prose-sm max-w-none cursor-text text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5"
                     onClick={() => state === "results" && setIsEditing(true)}
                   >
                     <ReactMarkdown>{displayedPrompt}</ReactMarkdown>
