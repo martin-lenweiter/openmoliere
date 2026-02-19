@@ -5,11 +5,12 @@ import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, Copy, Loader2 } from "lucide-react"
+import { Check, ChevronRight, Copy, Loader2 } from "lucide-react"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import { readSSEStream } from "@/lib/sse"
 import { QuestionsPanel } from "@/components/questions-panel"
 import { TipsPanel } from "@/components/tips-panel"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { ClarifyingQuestion, ConversationEntry, PromptEngineerStreamEvent, PromptUseCase } from "@/lib/prompt-engineer-types"
 
 type AppState = "empty" | "ready" | "analyzing" | "results" | "refining" | "error"
@@ -248,14 +249,19 @@ export function PromptEngineer() {
           </div>
 
           {changelog && (
-            <div className="flex flex-col gap-2">
-              <h2 className="text-base font-medium">What I changed</h2>
-              <Card>
-                <CardContent className="prose prose-sm max-w-none pt-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
-                  <ReactMarkdown>{changelog.replace(/^#{1,3}\s*What I changed\s*\n*/, "").trimStart()}</ReactMarkdown>
-                </CardContent>
-              </Card>
-            </div>
+            <Collapsible>
+              <CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                What I changed
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <Card className="mt-2">
+                  <CardContent className="prose prose-sm max-w-none pt-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
+                    <ReactMarkdown>{changelog.replace(/^#{1,3}\s*What I changed\s*\n*/, "").trimStart()}</ReactMarkdown>
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           {isLoading && (
