@@ -41,7 +41,7 @@ const TIPS = [
 export function TipsPanel() {
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex w-full items-center gap-1.5 py-2 text-base font-medium text-muted-foreground hover:text-foreground transition-colors [&[data-state=open]>svg]:rotate-180">
+      <CollapsibleTrigger className="flex w-full items-center gap-1.5 py-2 text-lg font-medium transition-colors [&[data-state=open]>svg]:rotate-180">
         Prompt Engineering Tips
         <ChevronDown className="h-4 w-4 transition-transform duration-200" />
       </CollapsibleTrigger>

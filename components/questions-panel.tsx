@@ -39,12 +39,12 @@ export function QuestionsPanel({
     )
   }
 
-  if (questions.length === 0) return null
-
   const hasAnswer = Object.values(answers).some((v) => v.trim() !== "") || feedback.trim() !== ""
 
   return (
     <div className="flex flex-col gap-4">
+      {questions.length > 0 && (
+      <>
       <h3 className="text-base font-medium">Clarifying Questions</h3>
       <div className="flex flex-col gap-4">
         {questions.map((q, i) => (
@@ -99,6 +99,8 @@ export function QuestionsPanel({
           </div>
         ))}
       </div>
+      </>
+      )}
       <div className="flex flex-col gap-2">
         <Label className="text-sm">Additional feedback</Label>
         <Textarea
