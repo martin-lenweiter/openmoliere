@@ -152,8 +152,8 @@ export function Checker() {
       </div>
 
       {state === "error" && (
-        <Card className="border-destructive">
-          <CardContent className="pt-4">
+        <Card className="border-destructive py-0">
+          <CardContent className="py-4">
             <p className="text-sm text-destructive">{errorMessage}</p>
           </CardContent>
         </Card>
@@ -185,8 +185,8 @@ export function Checker() {
                 )}
               </Button>
             </div>
-            <Card>
-              <CardContent className="pt-4">
+            <Card className="py-0">
+              <CardContent className="py-4">
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{correctedText}</p>
               </CardContent>
             </Card>

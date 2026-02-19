@@ -206,8 +206,8 @@ export function PromptEngineer() {
       </div>
 
       {state === "error" && (
-        <Card className="border-destructive">
-          <CardContent className="pt-4">
+        <Card className="border-destructive py-0">
+          <CardContent className="py-4">
             <p className="text-sm text-destructive">{errorMessage}</p>
           </CardContent>
         </Card>
@@ -259,8 +259,8 @@ export function PromptEngineer() {
                 )}
               </Button>
             </div>
-            <Card>
-              <CardContent className="pt-4">
+            <Card className="py-0">
+              <CardContent className="py-4">
                 {promptEditable && isEditing ? (
                   <Textarea
                     value={displayedPrompt}
@@ -272,7 +272,7 @@ export function PromptEngineer() {
                   />
                 ) : (
                   <div
-                    className={`prose prose-sm max-w-none text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 ${promptEditable ? "cursor-text" : "cursor-default"}`}
+                    className={`prose prose-sm max-w-none text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 first:[&>*]:mt-0 last:[&>*]:mb-0 ${promptEditable ? "cursor-text" : "cursor-default"}`}
                     onClick={() => promptEditable && setIsEditing(true)}
                   >
                     <ReactMarkdown remarkPlugins={[remarkBreaks]}>{displayedPrompt}</ReactMarkdown>
@@ -289,8 +289,8 @@ export function PromptEngineer() {
                 What I changed
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <Card className="mt-2">
-                  <CardContent className="prose prose-sm max-w-none pt-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
+                <Card className="mt-2 py-0">
+                  <CardContent className="prose prose-sm max-w-none py-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
                     <ReactMarkdown>{changelog.replace(/^#{1,3}\s*What I changed\s*\n*/, "").trimStart()}</ReactMarkdown>
                   </CardContent>
                 </Card>
