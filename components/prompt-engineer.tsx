@@ -15,9 +15,9 @@ import type { ClarifyingQuestion, ConversationEntry, PromptEngineerStreamEvent, 
 type AppState = "empty" | "ready" | "analyzing" | "results" | "refining" | "error"
 
 const USE_CASES: { value: PromptUseCase; label: string }[] = [
-  { value: "task-prompt", label: "Task Prompt" },
-  { value: "agent-instructions", label: "Agent Instructions" },
-  { value: "system-prompt", label: "System Prompt" },
+  { value: "task-prompt", label: "Task Prompt — one-shot instruction for a specific task" },
+  { value: "agent-instructions", label: "Agent Instructions — rules for an autonomous AI agent" },
+  { value: "system-prompt", label: "System Prompt — persistent behavior across a conversation" },
 ]
 
 function splitPromptAndChangelog(text: string): { prompt: string; changelog: string | null } {

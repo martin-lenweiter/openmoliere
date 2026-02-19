@@ -36,7 +36,7 @@ export async function* checkWithClaude(
     : `Detect the language and check the following text:\n\n${text}`
 
   const stream = client.messages.stream({
-    model: "claude-sonnet-4-5-20250929",
+    model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
