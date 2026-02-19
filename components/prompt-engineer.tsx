@@ -108,6 +108,7 @@ export function PromptEngineer() {
   const isLoading = state === "analyzing" || state === "refining"
   const { prompt: improvedPrompt, changelog } = splitPromptAndChangelog(streamedText)
   const displayedPrompt = editedPrompt ?? improvedPrompt
+  const promptEditable = state === "results" || changelog !== null
 
   const handleRegenerate = useCallback(() => {
     const newEntries: ConversationEntry[] = questions
@@ -225,7 +226,7 @@ export function PromptEngineer() {
             </div>
             <Card>
               <CardContent className="pt-4">
-                {state === "results" && isEditing ? (
+                {promptEditable && isEditing ? (
                   <Textarea
                     value={displayedPrompt}
                     onChange={(e) => setEditedPrompt(e.target.value)}
@@ -236,8 +237,8 @@ export function PromptEngineer() {
                   />
                 ) : (
                   <div
-                    className="prose prose-sm max-w-none cursor-text text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5"
-                    onClick={() => state === "results" && setIsEditing(true)}
+                    className={`prose prose-sm max-w-none text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 ${promptEditable ? "cursor-text" : "cursor-default"}`}
+                    onClick={() => promptEditable && setIsEditing(true)}
                   >
                     <ReactMarkdown>{displayedPrompt}</ReactMarkdown>
                   </div>
