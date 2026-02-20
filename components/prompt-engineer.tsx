@@ -42,7 +42,6 @@ export function PromptEngineer() {
   const [streamedText, setStreamedText] = useState("")
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([])
   const [answers, setAnswers] = useState<Record<number, string>>({})
-  const [conversation, setConversation] = useState<ConversationEntry[]>([])
   const [round, setRound] = useState(1)
   const [errorMessage, setErrorMessage] = useState("")
   const [feedback, setFeedback] = useState("")
@@ -124,7 +123,6 @@ export function PromptEngineer() {
   const handleImprove = useCallback(() => {
     if (!prompt.trim()) return
     setState("analyzing")
-    setConversation([])
     currentRoundRef.current = 1
     setRound(1)
     setEditedPrompt(null)
@@ -157,7 +155,6 @@ export function PromptEngineer() {
 
     const nextRound = round + 1
     currentRoundRef.current = nextRound
-    setConversation(newEntries)
     setRound(nextRound)
     setState("refining")
     setPrompt(displayedPrompt)
@@ -326,12 +323,17 @@ export function PromptEngineer() {
             </Card>
           </div>
 
-          {changelog && (
+          {(changelog || (isLoading && streamedText)) && (
             <Collapsible>
               <CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                {isLoading && !changelog ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+                )}
                 What I changed
               </CollapsibleTrigger>
+              {changelog && (
               <CollapsibleContent>
                 <Card className="mt-2 py-0">
                   <CardContent className="prose prose-sm max-w-none py-4 text-sm leading-relaxed dark:prose-invert [&_li]:mb-3 last:[&_li]:mb-0 [&>p+p]:mt-4">
@@ -339,6 +341,7 @@ export function PromptEngineer() {
                   </CardContent>
                 </Card>
               </CollapsibleContent>
+              )}
             </Collapsible>
           )}
           </>
