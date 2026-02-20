@@ -7,7 +7,7 @@ import remarkBreaks from "remark-breaks"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, ChevronRight, Copy, Loader2 } from "lucide-react"
+import { Check, ChevronRight, Copy, Loader2, Pencil } from "lucide-react"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import { readSSEStream } from "@/lib/sse"
 import { QuestionsPanel } from "@/components/questions-panel"
@@ -300,7 +300,7 @@ export function PromptEngineer() {
                 )}
               </Button>
             </div>
-            <Card className="py-0">
+            <Card className="relative py-0">
               <CardContent className="py-4">
                 {promptEditable && isEditing ? (
                   <Textarea
@@ -320,6 +320,9 @@ export function PromptEngineer() {
                   </div>
                 )}
               </CardContent>
+              {promptEditable && !isEditing && (
+                <Pencil className="absolute bottom-3 right-3 h-3.5 w-3.5 text-muted-foreground/50" />
+              )}
             </Card>
           </div>
 
