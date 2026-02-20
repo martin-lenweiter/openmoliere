@@ -3,11 +3,11 @@
 import { useState, useRef, useCallback } from "react"
 import posthog from "posthog-js"
 import ReactMarkdown from "react-markdown"
-import remarkBreaks from "remark-breaks"
+
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, ChevronRight, Copy, Loader2, Pencil } from "lucide-react"
+import { TextBox } from "@/components/text-box"
+import { Check, ChevronRight, Copy, Loader2 } from "lucide-react"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import { readSSEStream } from "@/lib/sse"
 import { QuestionsPanel } from "@/components/questions-panel"
@@ -46,7 +46,6 @@ export function PromptEngineer() {
   const [errorMessage, setErrorMessage] = useState("")
   const [feedback, setFeedback] = useState("")
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
   const [thinkingText, setThinkingText] = useState("")
   const [thinkingExpanded, setThinkingExpanded] = useState(false)
   const { copied, copy } = useCopyToClipboard()
@@ -126,7 +125,7 @@ export function PromptEngineer() {
     currentRoundRef.current = 1
     setRound(1)
     setEditedPrompt(null)
-    setIsEditing(false)
+
     posthog.capture("prompt_improve_submitted", {
       use_case: useCase,
       prompt_length: prompt.length,
@@ -159,7 +158,7 @@ export function PromptEngineer() {
     setState("refining")
     setPrompt(displayedPrompt)
     setEditedPrompt(null)
-    setIsEditing(false)
+
 
     posthog.capture("prompt_regenerated", {
       use_case: useCase,
@@ -195,7 +194,7 @@ export function PromptEngineer() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <Textarea
+        <TextBox
           placeholder="Paste your prompt here to get an improved version..."
           value={prompt}
           onChange={(e) => handlePromptChange(e.target.value)}
@@ -206,7 +205,6 @@ export function PromptEngineer() {
             }
           }}
           rows={8}
-          className="resize-y text-base leading-relaxed"
           disabled={isLoading}
         />
         <div className="flex flex-col gap-1">
@@ -300,30 +298,13 @@ export function PromptEngineer() {
                 )}
               </Button>
             </div>
-            <Card className="relative py-0">
-              <CardContent className="py-4">
-                {promptEditable && isEditing ? (
-                  <Textarea
-                    value={displayedPrompt}
-                    onChange={(e) => setEditedPrompt(e.target.value)}
-                    onBlur={() => setIsEditing(false)}
-                    autoFocus
-                    className="min-h-[120px] resize-y border-none bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0"
-                    rows={displayedPrompt.split("\n").length + 1}
-                  />
-                ) : (
-                  <div
-                    className={`prose prose-sm max-w-none text-sm leading-loose dark:prose-invert prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3 prose-hr:my-5 prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 first:[&>*]:mt-0 last:[&>*]:mb-0 ${promptEditable ? "cursor-text" : "cursor-default"}`}
-                    onClick={() => promptEditable && setIsEditing(true)}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>{displayedPrompt}</ReactMarkdown>
-                  </div>
-                )}
-              </CardContent>
-              {promptEditable && !isEditing && (
-                <Pencil className="absolute bottom-3 right-3 h-3.5 w-3.5 text-muted-foreground/50" />
-              )}
-            </Card>
+            <TextBox
+              value={displayedPrompt}
+              onChange={(e) => setEditedPrompt(e.target.value)}
+              readOnly={!promptEditable}
+              rows={Math.max(8, displayedPrompt.split("\n").length + 1)}
+              className="text-sm"
+            />
           </div>
 
           {(changelog || (isLoading && streamedText)) && (

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react"
 import posthog from "posthog-js"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { TextBox } from "@/components/text-box"
 import { Card, CardContent } from "@/components/ui/card"
 import { ErrorCard } from "@/components/error-card"
 import { Check, Copy, Loader2 } from "lucide-react"
@@ -137,7 +137,7 @@ export function Checker() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <Textarea
+        <TextBox
           placeholder="Paste your text here to check for spelling, grammar, and style errors..."
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
@@ -148,7 +148,6 @@ export function Checker() {
             }
           }}
           rows={8}
-          className="resize-y text-base leading-relaxed"
         />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

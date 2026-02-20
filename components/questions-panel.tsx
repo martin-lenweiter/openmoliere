@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { TextBox } from "@/components/text-box"
 import { Loader2 } from "lucide-react"
 import type { ClarifyingQuestion } from "@/lib/prompt-engineer-types"
 
@@ -103,7 +103,7 @@ export function QuestionsPanel({
       )}
       <div className="flex flex-col gap-2">
         <Label className="text-sm">Additional feedback</Label>
-        <Textarea
+        <TextBox
           placeholder="Anything else you'd like to change about the prompt..."
           value={feedback}
           onChange={(e) => onFeedbackChange(e.target.value)}
@@ -114,7 +114,7 @@ export function QuestionsPanel({
             }
           }}
           rows={2}
-          className="resize-y text-sm"
+          className="text-sm"
         />
       </div>
       <div className="flex items-center justify-between">
