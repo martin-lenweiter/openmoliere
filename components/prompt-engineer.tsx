@@ -155,10 +155,9 @@ export function PromptEngineer() {
       newEntries.push({ question: "Additional feedback from user", answer: feedback.trim() })
     }
 
-    const nextConv = [...conversation, ...newEntries]
     const nextRound = round + 1
     currentRoundRef.current = nextRound
-    setConversation(nextConv)
+    setConversation(newEntries)
     setRound(nextRound)
     setState("refining")
     setPrompt(displayedPrompt)
@@ -173,8 +172,8 @@ export function PromptEngineer() {
       prompt_length: displayedPrompt.length,
     })
 
-    callApi(nextConv, displayedPrompt)
-  }, [questions, answers, feedback, conversation, round, useCase, callApi, displayedPrompt])
+    callApi(newEntries, displayedPrompt)
+  }, [questions, answers, feedback, round, useCase, callApi, displayedPrompt])
 
   const handlePromptChange = (value: string) => {
     setPrompt(value)
@@ -239,7 +238,7 @@ export function PromptEngineer() {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {state === "refining" ? "Regenerating..." : "Improving..."}
+                {state === "refining" ? "Analyzing..." : "Improving..."}
               </>
             ) : (
               "Improve"
@@ -266,12 +265,12 @@ export function PromptEngineer() {
                 {isLoading && !thinkingExpanded ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {state === "refining" ? "Regenerating prompt..." : "Analyzing prompt..."}
+                    {state === "refining" ? "Analyzing..." : "Analyzing prompt..."}
                   </>
                 ) : (
                   <>
                     <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                    {isLoading ? (state === "refining" ? "Regenerating prompt..." : "Analyzing prompt...") : "Analysis"}
+                    {isLoading ? (state === "refining" ? "Analyzing..." : "Analyzing prompt...") : "Analysis"}
                   </>
                 )}
               </CollapsibleTrigger>
