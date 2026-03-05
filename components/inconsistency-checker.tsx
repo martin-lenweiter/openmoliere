@@ -86,11 +86,28 @@ export function InconsistencyChecker() {
 	const abortRef = useRef<AbortController | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const pendingLocateRef = useRef<number | null>(null);
+	const highlightedDivRef = useRef<HTMLDivElement>(null);
 
 	// Sync state after persisted text hydrates from sessionStorage
 	useEffect(() => {
 		if (state === "empty" && text.trim()) setState("ready");
 	}, [text, state]);
+
+	// Scroll highlighted text into view when highlight activates
+	useEffect(() => {
+		if (highlightedIndex === null) return;
+		// Double rAF: first frame commits DOM, second frame fires after browser layout
+		let rafId = requestAnimationFrame(() => {
+			rafId = requestAnimationFrame(() => {
+				const span = highlightedDivRef.current?.querySelector("span");
+				(span ?? highlightedDivRef.current)?.scrollIntoView({
+					behavior: "smooth",
+					block: "center",
+				});
+			});
+		});
+		return () => cancelAnimationFrame(rafId);
+	}, [highlightedIndex]);
 
 	// Run pending locate after highlight is cleared (textarea re-mounts)
 	useEffect(() => {
@@ -242,7 +259,10 @@ export function InconsistencyChecker() {
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col gap-3">
 				{highlightedIndex !== null && state === "results" ? (
-					<div className="border-input dark:bg-input/30 w-full cursor-default rounded-md border bg-transparent px-3 py-2 pb-4 text-base leading-relaxed shadow-xs min-h-48 whitespace-pre-wrap">
+					<div
+						ref={highlightedDivRef}
+						className="border-input dark:bg-input/30 w-full cursor-default rounded-md border bg-transparent px-3 py-2 pb-4 text-base leading-relaxed shadow-xs min-h-48 whitespace-pre-wrap"
+					>
 						{renderHighlightedText(
 							text,
 							inconsistencies[highlightedIndex]?.spans ?? [],
