@@ -1,5 +1,5 @@
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
