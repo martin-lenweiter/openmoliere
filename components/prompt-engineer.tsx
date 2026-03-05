@@ -434,7 +434,7 @@ export function PromptEngineer() {
 						</>
 					)}
 
-					{state === "results" && (
+					{(state === "results" || state === "refining") && (
 						<QuestionsPanel
 							questions={questions}
 							answers={answers}
@@ -443,7 +443,7 @@ export function PromptEngineer() {
 							onFeedbackChange={setFeedback}
 							onRegenerate={handleRegenerate}
 							round={round}
-							isRefining={false}
+							isRefining={state === "refining"}
 						/>
 					)}
 				</div>

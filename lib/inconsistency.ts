@@ -48,10 +48,11 @@ export async function* scanForInconsistencies(
 		model: "claude-sonnet-4-6",
 		max_tokens: 8192,
 		thinking: { type: "adaptive" },
+		system: SYSTEM_PROMPT,
 		messages: [
 			{
 				role: "user",
-				content: `${SYSTEM_PROMPT}\n\nAnalyze the following text for internal inconsistencies:\n\n${text}`,
+				content: `Analyze the following text for internal inconsistencies:\n\n${text}`,
 			},
 		],
 	});

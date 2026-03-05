@@ -1,15 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
+import { useCallback, useState } from "react";
 
 export function useCopyToClipboard() {
-  const [copied, setCopied] = useState(false)
+	const [copied, setCopied] = useState(false);
 
-  const copy = useCallback(async (text: string) => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [])
+	const copy = useCallback(async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch {
+			// Clipboard write failed (e.g. non-HTTPS context or permissions denied)
+		}
+	}, []);
 
-  return { copied, copy }
+	return { copied, copy };
 }

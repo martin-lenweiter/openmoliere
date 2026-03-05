@@ -196,7 +196,7 @@ export function InconsistencyChecker() {
 			text.slice(pos + item.fix.find.length);
 		setText(newText);
 		setResolvedSet((prev) => new Set(prev).add(index));
-		setHighlightedIndex((prev) => (prev === index ? null : prev));
+		setHighlightedIndex(null);
 
 		posthog.capture("inconsistency_fix_applied", {
 			category: item.category,

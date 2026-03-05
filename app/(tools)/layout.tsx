@@ -30,7 +30,7 @@ export default function ToolsLayout({
 									href={tab.href}
 									className={`flex min-h-[44px] items-center text-sm font-medium transition-colors ${i < TABS.length - 1 ? "pr-4" : ""} ${
 										isActive
-											? "border-b-2 border-foreground text-foreground"
+											? "-mb-px border-b-2 border-foreground text-foreground"
 											: "text-muted-foreground hover:text-foreground"
 									}`}
 								>

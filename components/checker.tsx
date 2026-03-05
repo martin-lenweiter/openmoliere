@@ -89,10 +89,13 @@ export function Checker() {
 				throw new Error(data?.error ?? `Request failed (${res.status})`);
 			}
 
+			let resultReceived = false;
+
 			for await (const event of readSSEStream<StreamEvent>(res)) {
 				if (event.type === "text") {
 					setCorrectedText((prev) => prev + event.content);
 				} else if (event.type === "result") {
+					resultReceived = true;
 					setCorrectedText(event.correctedText);
 					setErrors(event.errors);
 					setStats(event.stats);
@@ -113,7 +116,9 @@ export function Checker() {
 				}
 			}
 
-			setState((s) => (s === "checking" ? "results" : s));
+			if (!resultReceived) {
+				throw new Error("Request timed out. Please try again.");
+			}
 		} catch (e) {
 			if ((e as Error).name === "AbortError") return;
 			const message = (e as Error).message;
@@ -307,8 +312,11 @@ export function Checker() {
 									</h2>
 									<Card>
 										<CardContent className="pt-4">
-											{errors.map((error, i) => (
-												<ErrorCard key={i} error={error} />
+											{errors.map((error) => (
+												<ErrorCard
+													key={`${error.position.offset}-${error.position.length}`}
+													error={error}
+												/>
 											))}
 										</CardContent>
 									</Card>
