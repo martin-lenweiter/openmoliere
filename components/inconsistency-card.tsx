@@ -6,13 +6,19 @@ import type { Inconsistency } from "@/lib/inconsistency-types";
 export function InconsistencyCard({
 	inconsistency,
 	resolved,
+	highlighted,
+	spanColors,
 	onLocate,
 	onApply,
+	onHighlight,
 }: {
 	inconsistency: Inconsistency;
 	resolved: boolean;
+	highlighted: boolean;
+	spanColors: string[];
 	onLocate: () => void;
 	onApply: () => void;
+	onHighlight: () => void;
 }) {
 	return (
 		<div
@@ -29,6 +35,15 @@ export function InconsistencyCard({
 						<span key={span.offset}>
 							{i > 0 && (
 								<span className="mx-1.5 text-muted-foreground">vs</span>
+							)}
+							{highlighted && (
+								<span
+									className="mr-0.5 inline-block h-2 w-2 rounded-sm align-middle"
+									style={{
+										background:
+											spanColors[i] ?? spanColors[spanColors.length - 1],
+									}}
+								/>
 							)}
 							<span className="text-foreground underline decoration-dotted underline-offset-2">
 								&ldquo;{span.text}&rdquo;
@@ -62,13 +77,35 @@ export function InconsistencyCard({
 						<span className="mx-1.5 text-muted-foreground">&rarr;</span>
 						<span className="font-medium">{inconsistency.fix.replace}</span>
 					</span>
+					<div className="ml-auto flex items-center gap-1.5">
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-7 text-xs"
+							onClick={onHighlight}
+						>
+							{highlighted ? "Exit Highlight" : "Highlight"}
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-7 text-xs"
+							onClick={onApply}
+						>
+							Apply
+						</Button>
+					</div>
+				</div>
+			)}
+			{inconsistency.fix === null && !resolved && (
+				<div className="mt-2 flex justify-end">
 					<Button
 						variant="outline"
 						size="sm"
-						className="ml-auto h-7 text-xs"
-						onClick={onApply}
+						className="h-7 text-xs"
+						onClick={onHighlight}
 					>
-						Apply
+						{highlighted ? "Exit Highlight" : "Highlight"}
 					</Button>
 				</div>
 			)}

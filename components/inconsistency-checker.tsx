@@ -17,8 +17,55 @@ import type {
 	Inconsistency,
 	InconsistencyStats,
 	InconsistencyStreamEvent,
+	TextSpan,
 } from "@/lib/inconsistency-types";
 import { readSSEStream } from "@/lib/sse";
+
+const SPAN_COLORS = [
+	"rgba(251,191,36,0.5)",
+	"rgba(96,165,250,0.5)",
+	"rgba(52,211,153,0.5)",
+	"rgba(248,113,113,0.5)",
+	"rgba(167,139,250,0.5)",
+];
+
+function renderHighlightedText(
+	text: string,
+	spans: TextSpan[],
+	colors: string[],
+): React.ReactNode[] {
+	const resolved = spans
+		.map((span, i) => {
+			const pos = text.indexOf(span.text, Math.max(0, span.offset - 50));
+			return pos !== -1
+				? {
+						start: pos,
+						end: pos + span.text.length,
+						color: colors[i] ?? colors[colors.length - 1],
+					}
+				: null;
+		})
+		.filter(
+			(r): r is { start: number; end: number; color: string } => r !== null,
+		);
+
+	resolved.sort((a, b) => a.start - b.start);
+
+	const nodes: React.ReactNode[] = [];
+	let cursor = 0;
+	for (const { start, end, color } of resolved) {
+		if (start < cursor) continue; // skip overlapping spans
+		if (start > cursor) nodes.push(text.slice(cursor, start));
+		nodes.push(
+			<span key={start} style={{ background: color }}>
+				{text.slice(start, end)}
+			</span>,
+		);
+		cursor = end;
+	}
+	if (cursor < text.length) nodes.push(text.slice(cursor));
+	return nodes;
+}
 
 type AppState = "empty" | "ready" | "scanning" | "results" | "error";
 
@@ -32,6 +79,7 @@ export function InconsistencyChecker() {
 	const [stats, setStats] = useState<InconsistencyStats | null>(null);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [resolvedSet, setResolvedSet] = useState<Set<number>>(new Set());
+	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 	const [copied, setCopied] = useState(false);
 	const [thinkingText, setThinkingText] = useState("");
 	const [thinkingExpanded, setThinkingExpanded] = useState(false);
@@ -51,6 +99,7 @@ export function InconsistencyChecker() {
 		setStats(null);
 		setErrorMessage("");
 		setResolvedSet(new Set());
+		setHighlightedIndex(null);
 		setThinkingText("");
 		setThinkingExpanded(false);
 
@@ -116,6 +165,12 @@ export function InconsistencyChecker() {
 	};
 
 	const handleLocate = (index: number) => {
+		// Exit highlight mode first — textarea isn't mounted while highlight is active
+		if (highlightedIndex !== null) {
+			setHighlightedIndex(null);
+			return;
+		}
+
 		const item = inconsistencies[index];
 		if (!item?.spans[0] || !textareaRef.current) return;
 		const span = item.spans[0];
@@ -141,6 +196,7 @@ export function InconsistencyChecker() {
 			text.slice(pos + item.fix.find.length);
 		setText(newText);
 		setResolvedSet((prev) => new Set(prev).add(index));
+		setHighlightedIndex((prev) => (prev === index ? null : prev));
 
 		posthog.capture("inconsistency_fix_applied", {
 			category: item.category,
@@ -165,25 +221,35 @@ export function InconsistencyChecker() {
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col gap-3">
-				<TextBox
-					ref={textareaRef}
-					placeholder="Paste your text here to scan for internal inconsistencies..."
-					value={text}
-					onChange={(e) => handleTextChange(e.target.value)}
-					onKeyDown={(e) => {
-						if (
-							e.key === "Enter" &&
-							e.metaKey &&
-							text.trim() &&
-							state !== "scanning" &&
-							!isOverLimit
-						) {
-							e.preventDefault();
-							handleScan();
-						}
-					}}
-					rows={8}
-				/>
+				{highlightedIndex !== null && state === "results" ? (
+					<div className="border-input dark:bg-input/30 w-full cursor-default rounded-md border bg-transparent px-3 py-2 pb-4 text-base leading-relaxed shadow-xs min-h-48 whitespace-pre-wrap">
+						{renderHighlightedText(
+							text,
+							inconsistencies[highlightedIndex]?.spans ?? [],
+							SPAN_COLORS,
+						)}
+					</div>
+				) : (
+					<TextBox
+						ref={textareaRef}
+						placeholder="Paste your text here to scan for internal inconsistencies..."
+						value={text}
+						onChange={(e) => handleTextChange(e.target.value)}
+						onKeyDown={(e) => {
+							if (
+								e.key === "Enter" &&
+								e.metaKey &&
+								text.trim() &&
+								state !== "scanning" &&
+								!isOverLimit
+							) {
+								e.preventDefault();
+								handleScan();
+							}
+						}}
+						rows={8}
+					/>
+				)}
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3">
 						<span
@@ -342,8 +408,15 @@ export function InconsistencyChecker() {
 													key={item.spans.map((s) => s.offset).join("-")}
 													inconsistency={item}
 													resolved={resolvedSet.has(i)}
+													highlighted={highlightedIndex === i}
+													spanColors={SPAN_COLORS}
 													onLocate={() => handleLocate(i)}
 													onApply={() => handleApply(i)}
+													onHighlight={() =>
+														setHighlightedIndex(
+															highlightedIndex === i ? null : i,
+														)
+													}
 												/>
 											))}
 										</CardContent>
