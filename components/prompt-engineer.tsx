@@ -126,6 +126,7 @@ export function PromptEngineer() {
 				}
 
 				let resultQuestions: ClarifyingQuestion[] = [];
+				let resultReceived = false;
 
 				for await (const event of readSSEStream<PromptEngineerStreamEvent>(
 					res,
@@ -135,6 +136,7 @@ export function PromptEngineer() {
 					} else if (event.type === "text") {
 						setStreamedText((prev) => prev + event.content);
 					} else if (event.type === "result") {
+						resultReceived = true;
 						resultQuestions = event.questions;
 						setQuestions(event.questions);
 						setState("results");
@@ -150,7 +152,10 @@ export function PromptEngineer() {
 					}
 				}
 
-				setState((s) => (s !== "results" ? "results" : s));
+				if (!resultReceived) {
+					throw new Error("Request timed out. Please try again.");
+				}
+
 				return resultQuestions;
 			} catch (e) {
 				if ((e as Error).name === "AbortError") return;
@@ -303,7 +308,7 @@ export function PromptEngineer() {
 							{isLoading ? (
 								<>
 									<Loader2 className="h-4 w-4 animate-spin" />
-									{state === "refining" ? "Analyzing..." : "Improving..."}
+									{state === "refining" ? "Refining..." : "Improving..."}
 								</>
 							) : (
 								"Improve"

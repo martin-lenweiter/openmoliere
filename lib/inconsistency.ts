@@ -47,7 +47,7 @@ export async function* scanForInconsistencies(
 	const stream = client.messages.stream({
 		model: "claude-sonnet-4-6",
 		max_tokens: 8192,
-		thinking: { type: "enabled", budget_tokens: 4096 },
+		thinking: { type: "adaptive" },
 		messages: [
 			{
 				role: "user",

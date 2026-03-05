@@ -1,3 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk"
+import Anthropic from "@anthropic-ai/sdk";
 
-export const client = new Anthropic()
+export const client = new Anthropic();

@@ -46,6 +46,7 @@ export async function* checkWithClaude(
 	const stream = client.messages.stream({
 		model: "claude-sonnet-4-6",
 		max_tokens: 4096,
+		thinking: { type: "adaptive" },
 		system: SYSTEM_PROMPT,
 		messages: [{ role: "user", content: userMessage }],
 	});
@@ -55,6 +56,12 @@ export async function* checkWithClaude(
 	let hitDelimiter = false;
 
 	for await (const event of stream) {
+		if (
+			event.type === "content_block_delta" &&
+			event.delta.type === "thinking_delta"
+		) {
+			continue; // thinking is internal; proofread doesn't surface it
+		}
 		if (
 			event.type === "content_block_delta" &&
 			event.delta.type === "text_delta"

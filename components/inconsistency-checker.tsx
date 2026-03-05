@@ -405,7 +405,7 @@ export function InconsistencyChecker() {
 										<CardContent className="pt-4">
 											{inconsistencies.map((item, i) => (
 												<InconsistencyCard
-													key={item.spans.map((s) => s.offset).join("-")}
+													key={item.explanation}
 													inconsistency={item}
 													resolved={resolvedSet.has(i)}
 													highlighted={highlightedIndex === i}

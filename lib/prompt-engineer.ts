@@ -1,17 +1,21 @@
-import { client } from "@/lib/anthropic"
-import type { PromptUseCase, ClarifyingQuestion, ConversationEntry } from "@/lib/prompt-engineer-types"
+import { client } from "@/lib/anthropic";
+import type {
+	ClarifyingQuestion,
+	ConversationEntry,
+	PromptUseCase,
+} from "@/lib/prompt-engineer-types";
 
 const USE_CASE_SECTIONS: Record<PromptUseCase, string> = {
-  "system-prompt": `The user is writing a **system prompt** — persistent behavioral instructions for an AI assistant across an entire conversation.
+	"system-prompt": `The user is writing a **system prompt** — persistent behavioral instructions for an AI assistant across an entire conversation.
 Focus areas: behavior specification, guardrails, persona definition, output format, tone and style constraints, edge case handling.`,
-  "chatbot-prompt": `The user is writing a **chatbot prompt** — a message or instruction they'll send to a chatbot like ChatGPT or Claude.
+	"chatbot-prompt": `The user is writing a **chatbot prompt** — a message or instruction they'll send to a chatbot like ChatGPT or Claude.
 Focus areas: task clarity, relevant context, constraints, expected output format, success criteria.`,
-  "agent-instructions": `The user is writing **agent instructions** — instructions for an autonomous AI agent that uses tools and executes multi-step workflows.
+	"agent-instructions": `The user is writing **agent instructions** — instructions for an autonomous AI agent that uses tools and executes multi-step workflows.
 Focus areas: tool usage guidelines, decision-making criteria, error handling, multi-step planning, when to escalate vs. proceed autonomously.`,
-}
+};
 
 function buildSystemPrompt(useCase: PromptUseCase): string {
-  return `You are an expert prompt engineer. Your job is to take a user's prompt and produce an improved version based on proven prompt engineering principles.
+	return `You are an expert prompt engineer. Your job is to take a user's prompt and produce an improved version based on proven prompt engineering principles.
 
 ## Principles to consider
 
@@ -66,121 +70,148 @@ Output the improved prompt text, then a changelog, then optionally a questions J
 ---QUESTIONS_JSON---
 [JSON array of ClarifyingQuestion objects, each with: question (string), type ("text" | "choice" | "boolean"), options (string[] for choice type only), placeholder (string for text type only)]
 
-If there are no questions, omit the ---QUESTIONS_JSON--- delimiter and everything after it.`
+If there are no questions, omit the ---QUESTIONS_JSON--- delimiter and everything after it.`;
 }
 
 function buildMessages(
-  prompt: string,
-  useCase: PromptUseCase,
-  conversation: ConversationEntry[]
+	prompt: string,
+	useCase: PromptUseCase,
+	conversation: ConversationEntry[],
 ): Array<{ role: "user" | "assistant"; content: string }> {
-  if (conversation.length === 0) {
-    return [{ role: "user", content: `Improve this ${useCase.replace(/-/g, " ")}:\n\n${prompt}` }]
-  }
+	if (conversation.length === 0) {
+		return [
+			{
+				role: "user",
+				content: `Improve this ${useCase.replace(/-/g, " ")}:\n\n${prompt}`,
+			},
+		];
+	}
 
-  const qaBlock = conversation
-    .map((entry) => `Q: ${entry.question}\nA: ${entry.answer}`)
-    .join("\n\n")
+	const qaBlock = conversation
+		.map((entry) => `Q: ${entry.question}\nA: ${entry.answer}`)
+		.join("\n\n");
 
-  return [
-    {
-      role: "user",
-      content: `Improve this ${useCase.replace(/-/g, " ")}:\n\n${prompt}\n\nThe user has provided the following clarifications:\n\n${qaBlock}\n\nIncorporate these answers into the improved prompt. Continue asking questions if there are still gaps, or omit questions if the prompt is now complete.`,
-    },
-  ]
+	return [
+		{
+			role: "user",
+			content: `Improve this ${useCase.replace(/-/g, " ")}:\n\n${prompt}\n\nThe user has provided the following clarifications:\n\n${qaBlock}\n\nIncorporate these answers into the improved prompt. Continue asking questions if there are still gaps, or omit questions if the prompt is now complete.`,
+		},
+	];
 }
 
 export async function* improvePrompt(
-  prompt: string,
-  useCase: PromptUseCase,
-  conversation: ConversationEntry[]
+	prompt: string,
+	useCase: PromptUseCase,
+	conversation: ConversationEntry[],
 ): AsyncGenerator<
-  | { type: "thinking"; content: string }
-  | { type: "text"; content: string }
-  | { type: "done"; thinking: string; fullText: string; questions: ClarifyingQuestion[] }
+	| { type: "thinking"; content: string }
+	| { type: "text"; content: string }
+	| {
+			type: "done";
+			thinking: string;
+			fullText: string;
+			questions: ClarifyingQuestion[];
+	  }
 > {
-  const stream = client.messages.stream({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    thinking: { type: "enabled", budget_tokens: 4096 },
-    system: buildSystemPrompt(useCase),
-    messages: buildMessages(prompt, useCase, conversation),
-  })
+	const stream = client.messages.stream({
+		model: "claude-sonnet-4-6",
+		max_tokens: 8192,
+		thinking: { type: "adaptive" },
+		system: buildSystemPrompt(useCase),
+		messages: buildMessages(prompt, useCase, conversation),
+	});
 
-  let thinkingText = ""
-  let fullResponse = ""
-  let flushed = 0
-  let hitDelimiter = false
+	let thinkingText = "";
+	let fullResponse = "";
+	let flushed = 0;
+	let hitDelimiter = false;
 
-  for await (const event of stream) {
-    if (event.type === "content_block_delta") {
-      if (event.delta.type === "thinking_delta") {
-        thinkingText += event.delta.thinking
-        yield { type: "thinking", content: event.delta.thinking }
-      } else if (event.delta.type === "text_delta") {
-        fullResponse += event.delta.text
-        if (hitDelimiter) continue
+	for await (const event of stream) {
+		if (event.type === "content_block_delta") {
+			if (event.delta.type === "thinking_delta") {
+				thinkingText += event.delta.thinking;
+				yield { type: "thinking", content: event.delta.thinking };
+			} else if (event.delta.type === "text_delta") {
+				fullResponse += event.delta.text;
+				if (hitDelimiter) continue;
 
-        const delimIdx = fullResponse.indexOf("---QUESTIONS_JSON---")
-        if (delimIdx !== -1) {
-          if (delimIdx > flushed) {
-            yield { type: "text", content: fullResponse.substring(flushed, delimIdx).trimEnd() }
-          }
-          flushed = fullResponse.length
-          hitDelimiter = true
-          continue
-        }
+				const delimIdx = fullResponse.indexOf("---QUESTIONS_JSON---");
+				if (delimIdx !== -1) {
+					if (delimIdx > flushed) {
+						yield {
+							type: "text",
+							content: fullResponse.substring(flushed, delimIdx).trimEnd(),
+						};
+					}
+					flushed = fullResponse.length;
+					hitDelimiter = true;
+					continue;
+				}
 
-        // Hold back last 25 chars to catch partial delimiter
-        const safeEnd = Math.max(flushed, fullResponse.length - 25)
-        if (safeEnd > flushed) {
-          yield { type: "text", content: fullResponse.substring(flushed, safeEnd) }
-          flushed = safeEnd
-        }
-      }
-    }
-  }
+				// Hold back last 25 chars to catch partial delimiter
+				const safeEnd = Math.max(flushed, fullResponse.length - 25);
+				if (safeEnd > flushed) {
+					yield {
+						type: "text",
+						content: fullResponse.substring(flushed, safeEnd),
+					};
+					flushed = safeEnd;
+				}
+			}
+		}
+	}
 
-  // Flush any remaining text before delimiter
-  if (!hitDelimiter && flushed < fullResponse.length) {
-    yield { type: "text", content: fullResponse.substring(flushed) }
-  }
+	// Flush any remaining text before delimiter
+	if (!hitDelimiter && flushed < fullResponse.length) {
+		yield { type: "text", content: fullResponse.substring(flushed) };
+	}
 
-  const { fullText, questions } = parsePromptEngineerResponse(fullResponse)
-  yield { type: "done", thinking: thinkingText, fullText, questions }
+	const { fullText, questions } = parsePromptEngineerResponse(fullResponse);
+	yield { type: "done", thinking: thinkingText, fullText, questions };
 }
 
 export function parsePromptEngineerResponse(response: string): {
-  fullText: string
-  questions: ClarifyingQuestion[]
+	fullText: string;
+	questions: ClarifyingQuestion[];
 } {
-  const delimIdx = response.indexOf("---QUESTIONS_JSON---")
+	const delimIdx = response.indexOf("---QUESTIONS_JSON---");
 
-  if (delimIdx === -1) {
-    return { fullText: response.trimEnd(), questions: [] }
-  }
+	if (delimIdx === -1) {
+		return { fullText: response.trimEnd(), questions: [] };
+	}
 
-  const fullText = response.substring(0, delimIdx).trimEnd()
-  const jsonPart = response.substring(delimIdx + "---QUESTIONS_JSON---".length).trim()
+	const fullText = response.substring(0, delimIdx).trimEnd();
+	const jsonPart = response
+		.substring(delimIdx + "---QUESTIONS_JSON---".length)
+		.trim();
 
-  let questions: ClarifyingQuestion[] = []
+	let questions: ClarifyingQuestion[] = [];
 
-  try {
-    const parsed = JSON.parse(jsonPart)
-    if (Array.isArray(parsed)) {
-      questions = parsed
-        .slice(0, 3)
-        .filter((q): q is Record<string, unknown> => q && typeof q === "object" && typeof q.question === "string")
-        .map((q) => ({
-          question: q.question as string,
-          type: (["text", "choice", "boolean"].includes(q.type as string) ? q.type : "text") as ClarifyingQuestion["type"],
-          ...(Array.isArray(q.options) ? { options: q.options as string[] } : {}),
-          ...(typeof q.placeholder === "string" ? { placeholder: q.placeholder } : {}),
-        }))
-    }
-  } catch {
-    // JSON parse failed — return no questions
-  }
+	try {
+		const parsed = JSON.parse(jsonPart);
+		if (Array.isArray(parsed)) {
+			questions = parsed
+				.slice(0, 3)
+				.filter(
+					(q): q is Record<string, unknown> =>
+						q && typeof q === "object" && typeof q.question === "string",
+				)
+				.map((q) => ({
+					question: q.question as string,
+					type: (["text", "choice", "boolean"].includes(q.type as string)
+						? q.type
+						: "text") as ClarifyingQuestion["type"],
+					...(Array.isArray(q.options)
+						? { options: q.options as string[] }
+						: {}),
+					...(typeof q.placeholder === "string"
+						? { placeholder: q.placeholder }
+						: {}),
+				}));
+		}
+	} catch {
+		// JSON parse failed — return no questions
+	}
 
-  return { fullText, questions }
+	return { fullText, questions };
 }
