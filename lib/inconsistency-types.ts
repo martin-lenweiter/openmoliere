@@ -28,6 +28,7 @@ export interface InconsistencyStats {
 }
 
 export type InconsistencyStreamEvent =
+	| { type: "thinking"; content: string }
 	| { type: "text"; content: string }
 	| {
 			type: "result";

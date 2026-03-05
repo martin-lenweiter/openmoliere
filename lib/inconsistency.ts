@@ -40,17 +40,18 @@ If the text has no inconsistencies, output a brief confirmation, then the delimi
 export async function* scanForInconsistencies(
 	text: string,
 ): AsyncGenerator<
+	| { type: "thinking"; content: string }
 	| { type: "text"; content: string }
 	| { type: "done"; inconsistencies: Inconsistency[] }
 > {
 	const stream = client.messages.stream({
 		model: "claude-sonnet-4-6",
-		max_tokens: 4096,
-		system: SYSTEM_PROMPT,
+		max_tokens: 8192,
+		thinking: { type: "enabled", budget_tokens: 4096 },
 		messages: [
 			{
 				role: "user",
-				content: `Analyze the following text for internal inconsistencies:\n\n${text}`,
+				content: `${SYSTEM_PROMPT}\n\nAnalyze the following text for internal inconsistencies:\n\n${text}`,
 			},
 		],
 	});
@@ -60,10 +61,13 @@ export async function* scanForInconsistencies(
 	let hitDelimiter = false;
 
 	for await (const event of stream) {
-		if (
-			event.type === "content_block_delta" &&
-			event.delta.type === "text_delta"
-		) {
+		if (event.type === "content_block_delta") {
+			if (event.delta.type === "thinking_delta") {
+				yield { type: "thinking", content: event.delta.thinking };
+				continue;
+			}
+			if (event.delta.type !== "text_delta") continue;
+
 			fullResponse += event.delta.text;
 			if (hitDelimiter) continue;
 

@@ -1,12 +1,17 @@
 "use client";
 
-import { Check, Copy, Loader2 } from "lucide-react";
+import { Check, ChevronRight, Copy, Loader2 } from "lucide-react";
 import posthog from "posthog-js";
 import { useCallback, useRef, useState } from "react";
 import { InconsistencyCard } from "@/components/inconsistency-card";
 import { TextBox } from "@/components/text-box";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import type {
 	Inconsistency,
@@ -28,6 +33,8 @@ export function InconsistencyChecker() {
 	const [errorMessage, setErrorMessage] = useState("");
 	const [resolvedSet, setResolvedSet] = useState<Set<number>>(new Set());
 	const [copied, setCopied] = useState(false);
+	const [thinkingText, setThinkingText] = useState("");
+	const [thinkingExpanded, setThinkingExpanded] = useState(false);
 	const abortRef = useRef<AbortController | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,6 +51,8 @@ export function InconsistencyChecker() {
 		setStats(null);
 		setErrorMessage("");
 		setResolvedSet(new Set());
+		setThinkingText("");
+		setThinkingExpanded(false);
 
 		posthog.capture("inconsistency_scan_submitted", {
 			text_length: text.length,
@@ -63,7 +72,9 @@ export function InconsistencyChecker() {
 			}
 
 			for await (const event of readSSEStream<InconsistencyStreamEvent>(res)) {
-				if (event.type === "text") {
+				if (event.type === "thinking") {
+					setThinkingText((prev) => prev + event.content);
+				} else if (event.type === "text") {
 					setSummary((prev) => prev + event.content);
 				} else if (event.type === "result") {
 					setInconsistencies(event.inconsistencies);
@@ -229,7 +240,32 @@ export function InconsistencyChecker() {
 				</Card>
 			)}
 
-			{state === "scanning" && !summary && (
+			{(state === "scanning" || thinkingText) && (
+				<Collapsible open={thinkingExpanded} onOpenChange={setThinkingExpanded}>
+					<CollapsibleTrigger className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+						{state === "scanning" && !thinkingExpanded ? (
+							<>
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								Analyzing...
+							</>
+						) : (
+							<>
+								<ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+								{state === "scanning" ? "Analyzing..." : "Analysis"}
+							</>
+						)}
+					</CollapsibleTrigger>
+					{thinkingText && (
+						<CollapsibleContent>
+							<div className="mt-2 max-h-64 overflow-y-auto rounded-md border p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+								{thinkingText}
+							</div>
+						</CollapsibleContent>
+					)}
+				</Collapsible>
+			)}
+
+			{state === "scanning" && !summary && !thinkingText && (
 				<div className="flex flex-col gap-4">
 					<div className="flex flex-col gap-2">
 						<div className="h-5 w-24 animate-pulse rounded bg-muted" />

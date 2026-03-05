@@ -82,7 +82,9 @@ export async function POST(req: NextRequest) {
 					let inconsistencies: Inconsistency[] = [];
 
 					for await (const event of gen) {
-						if (event.type === "text") {
+						if (event.type === "thinking") {
+							send({ type: "thinking", content: event.content });
+						} else if (event.type === "text") {
 							send({ type: "text", content: event.content });
 						} else if (event.type === "done") {
 							inconsistencies = event.inconsistencies;
