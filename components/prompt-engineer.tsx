@@ -2,7 +2,7 @@
 
 import { Check, ChevronRight, Copy, Loader2 } from "lucide-react";
 import posthog from "posthog-js";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { QuestionsPanel } from "@/components/questions-panel";
 import { TextBox } from "@/components/text-box";
@@ -91,6 +91,11 @@ export function PromptEngineer() {
 	const { copied, copy } = useCopyToClipboard();
 	const abortRef = useRef<AbortController | null>(null);
 	const currentRoundRef = useRef(1);
+
+	// Sync state after persisted prompt hydrates from sessionStorage
+	useEffect(() => {
+		if (state === "empty" && prompt.trim()) setState("ready");
+	}, [prompt, state]);
 
 	const callApi = useCallback(
 		async (conv: ConversationEntry[], promptOverride?: string) => {

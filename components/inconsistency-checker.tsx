@@ -2,7 +2,7 @@
 
 import { Check, ChevronRight, Copy, Loader2 } from "lucide-react";
 import posthog from "posthog-js";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { InconsistencyCard } from "@/components/inconsistency-card";
 import { TextBox } from "@/components/text-box";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,26 @@ export function InconsistencyChecker() {
 	const [thinkingExpanded, setThinkingExpanded] = useState(false);
 	const abortRef = useRef<AbortController | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const pendingLocateRef = useRef<number | null>(null);
+
+	// Sync state after persisted text hydrates from sessionStorage
+	useEffect(() => {
+		if (state === "empty" && text.trim()) setState("ready");
+	}, [text, state]);
+
+	// Run pending locate after highlight is cleared (textarea re-mounts)
+	useEffect(() => {
+		if (highlightedIndex !== null || pendingLocateRef.current === null) return;
+		const index = pendingLocateRef.current;
+		pendingLocateRef.current = null;
+		const item = inconsistencies[index];
+		if (!item?.spans[0] || !textareaRef.current) return;
+		const span = item.spans[0];
+		const pos = text.indexOf(span.text, Math.max(0, span.offset - 50));
+		if (pos === -1) return;
+		textareaRef.current.focus();
+		textareaRef.current.setSelectionRange(pos, pos + span.text.length);
+	}, [highlightedIndex, inconsistencies, text]);
 
 	const handleScan = useCallback(async () => {
 		if (!text.trim()) return;
@@ -165,8 +185,10 @@ export function InconsistencyChecker() {
 	};
 
 	const handleLocate = (index: number) => {
-		// Exit highlight mode first — textarea isn't mounted while highlight is active
 		if (highlightedIndex !== null) {
+			// Textarea isn't mounted while highlight is active — store target and
+			// clear highlight; the effect below will run the locate after re-mount.
+			pendingLocateRef.current = index;
 			setHighlightedIndex(null);
 			return;
 		}
@@ -174,8 +196,6 @@ export function InconsistencyChecker() {
 		const item = inconsistencies[index];
 		if (!item?.spans[0] || !textareaRef.current) return;
 		const span = item.spans[0];
-
-		// Find the span text in the current textarea content
 		const pos = text.indexOf(span.text, Math.max(0, span.offset - 50));
 		if (pos === -1) return;
 

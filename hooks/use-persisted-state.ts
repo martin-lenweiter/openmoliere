@@ -1,8 +1,8 @@
 import {
 	type Dispatch,
 	type SetStateAction,
-	useCallback,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 
@@ -10,17 +10,20 @@ export function usePersistedState<T>(
 	key: string,
 	initialValue: T,
 ): [T, Dispatch<SetStateAction<T>>] {
-	const [value, setValue] = useState<T>(() => {
-		if (typeof window === "undefined") return initialValue;
-		try {
-			const stored = sessionStorage.getItem(key);
-			return stored ? (JSON.parse(stored) as T) : initialValue;
-		} catch {
-			return initialValue;
-		}
-	});
+	const [value, setValue] = useState<T>(initialValue);
+	const isFirstRender = useRef(true);
 
 	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			try {
+				const stored = sessionStorage.getItem(key);
+				if (stored !== null) {
+					setValue(JSON.parse(stored) as T);
+					return;
+				}
+			} catch {}
+		}
 		try {
 			sessionStorage.setItem(key, JSON.stringify(value));
 		} catch {
