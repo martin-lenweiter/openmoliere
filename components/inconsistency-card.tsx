@@ -97,7 +97,7 @@ export function InconsistencyCard({
 					</div>
 				</div>
 			)}
-			{inconsistency.fix === null && !resolved && (
+			{inconsistency.fix == null && !resolved && (
 				<div className="mt-2 flex justify-end">
 					<Button
 						variant="outline"

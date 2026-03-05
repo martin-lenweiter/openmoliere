@@ -2,7 +2,13 @@
 
 import { Check, ChevronRight, Copy, Loader2 } from "lucide-react";
 import posthog from "posthog-js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { InconsistencyCard } from "@/components/inconsistency-card";
 import { TextBox } from "@/components/text-box";
 import { Button } from "@/components/ui/button";
@@ -85,7 +91,7 @@ export function InconsistencyChecker() {
 	const [thinkingExpanded, setThinkingExpanded] = useState(false);
 	const abortRef = useRef<AbortController | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const pendingLocateRef = useRef<number | null>(null);
+	const [pendingLocate, setPendingLocate] = useState<number | null>(null);
 	const highlightedDivRef = useRef<HTMLDivElement>(null);
 
 	// Sync state after persisted text hydrates from sessionStorage
@@ -94,34 +100,34 @@ export function InconsistencyChecker() {
 	}, [text, state]);
 
 	// Scroll highlighted text into view when highlight activates
-	useEffect(() => {
-		if (highlightedIndex === null) return;
-		// Double rAF: first frame commits DOM, second frame fires after browser layout
-		let rafId = requestAnimationFrame(() => {
-			rafId = requestAnimationFrame(() => {
-				const span = highlightedDivRef.current?.querySelector("span");
-				(span ?? highlightedDivRef.current)?.scrollIntoView({
-					behavior: "smooth",
-					block: "center",
-				});
-			});
-		});
-		return () => cancelAnimationFrame(rafId);
+	useLayoutEffect(() => {
+		if (highlightedIndex === null || !highlightedDivRef.current) return;
+		const span = highlightedDivRef.current.querySelector("span");
+		const target = span ?? highlightedDivRef.current;
+		const rect = target.getBoundingClientRect();
+		const targetScrollY =
+			window.scrollY + rect.top - (window.innerHeight / 2 - rect.height / 2);
+		window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
 	}, [highlightedIndex]);
 
-	// Run pending locate after highlight is cleared (textarea re-mounts)
+	// Run pending locate after highlight is cleared (textarea re-mounts).
+	// Uses requestAnimationFrame so React has committed the re-mounted textarea
+	// to the DOM (and assigned textareaRef.current) before we try to use it.
 	useEffect(() => {
-		if (highlightedIndex !== null || pendingLocateRef.current === null) return;
-		const index = pendingLocateRef.current;
-		pendingLocateRef.current = null;
-		const item = inconsistencies[index];
-		if (!item?.spans[0] || !textareaRef.current) return;
-		const span = item.spans[0];
-		const pos = text.indexOf(span.text, Math.max(0, span.offset - 50));
-		if (pos === -1) return;
-		textareaRef.current.focus();
-		textareaRef.current.setSelectionRange(pos, pos + span.text.length);
-	}, [highlightedIndex, inconsistencies, text]);
+		if (pendingLocate === null) return;
+		const index = pendingLocate;
+		const raf = requestAnimationFrame(() => {
+			setPendingLocate(null);
+			const item = inconsistencies[index];
+			if (!item?.spans[0] || !textareaRef.current) return;
+			const span = item.spans[0];
+			const pos = text.indexOf(span.text, Math.max(0, span.offset - 50));
+			if (pos === -1) return;
+			textareaRef.current.focus();
+			textareaRef.current.setSelectionRange(pos, pos + span.text.length);
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [pendingLocate, inconsistencies, text]);
 
 	const handleScan = useCallback(async () => {
 		if (!text.trim()) return;
@@ -205,7 +211,7 @@ export function InconsistencyChecker() {
 		if (highlightedIndex !== null) {
 			// Textarea isn't mounted while highlight is active — store target and
 			// clear highlight; the effect below will run the locate after re-mount.
-			pendingLocateRef.current = index;
+			setPendingLocate(index);
 			setHighlightedIndex(null);
 			return;
 		}
@@ -445,7 +451,7 @@ export function InconsistencyChecker() {
 										<CardContent className="pt-4">
 											{inconsistencies.map((item, i) => (
 												<InconsistencyCard
-													key={item.explanation}
+													key={`${item.category}-${item.explanation}`}
 													inconsistency={item}
 													resolved={resolvedSet.has(i)}
 													highlighted={highlightedIndex === i}
