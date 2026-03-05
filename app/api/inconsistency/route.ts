@@ -1,30 +1,41 @@
 export const runtime = "nodejs";
-export const maxDuration = 45;
+export const maxDuration = 30;
 
 import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
+import { scanForInconsistencies } from "@/lib/inconsistency";
+import type {
+	Inconsistency,
+	InconsistencyStats,
+	InconsistencyStreamEvent,
+} from "@/lib/inconsistency-types";
 import { getPostHogClient } from "@/lib/posthog-server";
-import { improvePrompt } from "@/lib/prompt-engineer";
-import type { PromptEngineerStreamEvent } from "@/lib/prompt-engineer-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-const conversationEntrySchema = z.object({
-	question: z.string(),
-	answer: z.string(),
-});
-
 const requestSchema = z.object({
-	prompt: z
+	text: z
 		.string()
 		.trim()
-		.min(1, "Prompt is required")
-		.max(20000, "Prompt must be under 20,000 characters"),
-	useCase: z.enum(["system-prompt", "chatbot-prompt", "agent-instructions"]),
-	conversation: z.array(conversationEntrySchema).max(10).default([]),
+		.min(1, "Text is required")
+		.max(10000, "Text must be under 10,000 characters"),
 });
 
 function getClientIp(req: NextRequest): string {
 	return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+function computeStats(inconsistencies: Inconsistency[]): InconsistencyStats {
+	return {
+		total: inconsistencies.length,
+		logic: inconsistencies.filter((i) => i.category === "logic").length,
+		naming: inconsistencies.filter((i) => i.category === "naming").length,
+		tense: inconsistencies.filter((i) => i.category === "tense").length,
+		formatting: inconsistencies.filter((i) => i.category === "formatting")
+			.length,
+		capitalization: inconsistencies.filter(
+			(i) => i.category === "capitalization",
+		).length,
+	};
 }
 
 export async function POST(req: NextRequest) {
@@ -39,7 +50,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { prompt, useCase, conversation } = parsed.data;
+		const { text } = parsed.data;
 
 		const ip = getClientIp(req);
 		const { allowed } = checkRateLimit(ip);
@@ -47,8 +58,8 @@ export async function POST(req: NextRequest) {
 			const posthog = getPostHogClient();
 			posthog.capture({
 				distinctId: ip,
-				event: "api_prompt_engineer_rate_limited",
-				properties: { use_case: useCase, prompt_length: prompt.length },
+				event: "api_inconsistency_rate_limited",
+				properties: { text_length: text.length },
 			});
 			return Response.json(
 				{ error: "You've reached the daily limit. Try again tomorrow." },
@@ -59,39 +70,42 @@ export async function POST(req: NextRequest) {
 		const encoder = new TextEncoder();
 		const stream = new ReadableStream({
 			async start(controller) {
-				function send(event: PromptEngineerStreamEvent) {
+				function send(event: InconsistencyStreamEvent) {
 					controller.enqueue(
 						encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
 					);
 				}
 
 				try {
-					const gen = improvePrompt(prompt, useCase, conversation);
-					const round =
-						conversation.length > 0
-							? Math.ceil(conversation.length / 2) + 1
-							: 1;
+					const gen = scanForInconsistencies(text);
+
+					let inconsistencies: Inconsistency[] = [];
 
 					for await (const event of gen) {
-						if (event.type === "thinking") {
-							send({ type: "thinking", content: event.content });
-						} else if (event.type === "text") {
+						if (event.type === "text") {
 							send({ type: "text", content: event.content });
 						} else if (event.type === "done") {
-							send({ type: "result", questions: event.questions });
-							const posthog = getPostHogClient();
-							posthog.capture({
-								distinctId: ip,
-								event: "api_prompt_engineer_completed",
-								properties: {
-									use_case: useCase,
-									round,
-									questions_count: event.questions.length,
-									prompt_length: prompt.length,
-								},
-							});
+							inconsistencies = event.inconsistencies;
 						}
 					}
+
+					const stats = computeStats(inconsistencies);
+					send({ type: "result", inconsistencies, stats });
+
+					const posthog = getPostHogClient();
+					posthog.capture({
+						distinctId: ip,
+						event: "api_inconsistency_completed",
+						properties: {
+							total_inconsistencies: stats.total,
+							logic: stats.logic,
+							naming: stats.naming,
+							tense: stats.tense,
+							formatting: stats.formatting,
+							capitalization: stats.capitalization,
+							text_length: text.length,
+						},
+					});
 				} catch (err) {
 					const message =
 						err instanceof Error ? err.message : "An unexpected error occurred";
