@@ -46,7 +46,6 @@ export async function* checkWithClaude(
 	const stream = client.messages.stream({
 		model: "claude-sonnet-4-6",
 		max_tokens: 4096,
-		thinking: { type: "adaptive" },
 		system: SYSTEM_PROMPT,
 		messages: [{ role: "user", content: userMessage }],
 	});

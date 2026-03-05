@@ -371,7 +371,7 @@ export function PromptEngineer() {
 						</Collapsible>
 					)}
 
-					{isLoading && !streamedText && (
+					{isLoading && !streamedText && !thinkingText && (
 						<div className="flex flex-col gap-2">
 							<div className="h-5 w-36 animate-pulse rounded bg-muted" />
 							<div className="space-y-2 rounded-md border p-4">
