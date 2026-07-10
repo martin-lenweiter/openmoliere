@@ -1,4 +1,4 @@
-import { client } from "@/lib/anthropic";
+import { client, MODEL } from "@/lib/anthropic";
 import type {
 	ClarifyingQuestion,
 	ConversationEntry,
@@ -114,7 +114,7 @@ export async function* improvePrompt(
 	  }
 > {
 	const stream = client.messages.stream({
-		model: "claude-sonnet-4-6",
+		model: MODEL,
 		max_tokens: 8192,
 		thinking: { type: "adaptive" },
 		system: buildSystemPrompt(useCase),

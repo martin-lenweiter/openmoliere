@@ -1,4 +1,4 @@
-import { client } from "@/lib/anthropic";
+import { client, MODEL } from "@/lib/anthropic";
 
 const SYSTEM_PROMPT = `You are a meticulous proofreader and copy editor. Your job is to fix spelling, grammar, and style errors in the provided text.
 
@@ -44,7 +44,7 @@ export async function* checkWithClaude(
 		: `Detect the language and check the following text:\n\n${text}`;
 
 	const stream = client.messages.stream({
-		model: "claude-sonnet-4-6",
+		model: MODEL,
 		max_tokens: 4096,
 		system: SYSTEM_PROMPT,
 		messages: [{ role: "user", content: userMessage }],

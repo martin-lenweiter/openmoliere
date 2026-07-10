@@ -1,4 +1,4 @@
-import { client } from "@/lib/anthropic";
+import { client, MODEL } from "@/lib/anthropic";
 import type {
 	Inconsistency,
 	InconsistencyFix,
@@ -45,7 +45,7 @@ export async function* scanForInconsistencies(
 	| { type: "done"; inconsistencies: Inconsistency[] }
 > {
 	const stream = client.messages.stream({
-		model: "claude-sonnet-4-6",
+		model: MODEL,
 		max_tokens: 5000,
 		thinking: { type: "enabled", budget_tokens: 2000 },
 		system: SYSTEM_PROMPT,
